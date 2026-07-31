@@ -3,12 +3,15 @@
     <div v-for="view in store.viewsToShow" :key="view.hash" class="widget-view">
       <div class="w-full h-full bg-slate-500 flex justify-center align-center">
         <div
-          v-if="view.widgets.isEmpty()"
+          v-if="visibleWidgets(view).isEmpty()"
           class="px-10 py-16 rounded-md flex flex-col justify-center align-center bg-slate-400 font-extrabold text-slate-600 w-[480px] text-center text-3xl"
         >
           <p>You currently have no widgets!</p>
           <br />
           <p>Open edit mode to start tweaking this view.</p>
+          <p v-if="hasHiddenPowerControlWidget(view)" class="mt-3 text-base">
+            Power Control is available in the Desktop app only.
+          </p>
         </div>
       </div>
       <SnappingGrid v-if="store.snapToGrid && store.editingMode" :grid-interval="store.gridInterval" />
@@ -34,7 +37,7 @@
           <div class="w-full h-full bg-[#ffffff03] rounded-md" />
         </div>
       </div>
-      <template v-for="widget in view.widgets.slice().reverse()" :key="widget.hash">
+      <template v-for="widget in visibleWidgets(view).slice().reverse()" :key="widget.hash">
         <WidgetHugger
           v-if="componentExists(widget.component)"
           :widget="widget"
@@ -51,7 +54,9 @@
 <script setup lang="ts">
 import { type AsyncComponentLoader, defineAsyncComponent } from 'vue'
 
+import { isElectron } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { View, Widget } from '@/types/widgets'
 import { WidgetType } from '@/types/widgets'
 
 import SnappingGrid from '../components/SnappingGrid.vue'
@@ -80,8 +85,16 @@ const componentFromType = (componentName: string): AsyncComponentLoader => {
 }
 
 const componentExists = (componentName: string): boolean => {
-  return Object.values(WidgetType).includes(mappedComponentType(componentName))
+  const componentType = mappedComponentType(componentName)
+  return (
+    Object.values(WidgetType).includes(componentType) && (isElectron() || componentType !== WidgetType.PowerControl)
+  )
 }
+
+const visibleWidgets = (view: View): Widget[] => view.widgets.filter((widget) => componentExists(widget.component))
+
+const hasHiddenPowerControlWidget = (view: View): boolean =>
+  !isElectron() && view.widgets.some((widget) => mappedComponentType(widget.component) === WidgetType.PowerControl)
 </script>
 
 <style scoped>

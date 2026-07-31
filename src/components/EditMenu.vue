@@ -429,10 +429,14 @@
         class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 relative"
         :class="{ 'border-2 border-[#135da3]': widget.isExternal }"
         draggable="true"
+        role="button"
+        tabindex="0"
         @dragstart="(event) => onRegularWidgetDragStart(event, widget)"
         @dragend="(event) => onRegularWidgetDragEnd(widget, event)"
         @touchstart="(event) => onRegularWidgetDragStart(event, widget)"
         @touchend="(event) => onRegularWidgetDragEnd(widget, event)"
+        @dblclick="store.addWidget(makeWidgetUnique(widget), store.currentView)"
+        @keydown.enter="store.addWidget(makeWidgetUnique(widget), store.currentView)"
       >
         <div
           v-if="widget.isExternal"
@@ -547,6 +551,7 @@
 </template>
 
 <script setup lang="ts">
+import { mdiPowerPlug } from '@mdi/js'
 import { useConfirmDialog } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
@@ -572,7 +577,7 @@ import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { getWidgetsFromBlueOS } from '@/libs/blueos'
-import { isHorizontalScroll } from '@/libs/utils'
+import { isElectron, isHorizontalScroll } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -710,15 +715,17 @@ const makeWidgetUnique = (widget: InternalWidgetSetupInfo): InternalWidgetSetupI
 }
 
 const availableInternalWidgets = computed(() =>
-  Object.values(WidgetType).map((widgetType) => {
-    return {
-      component: widgetType,
-      name: widgetType,
-      icon: widgetImages[widgetType] as string,
-      options: {},
-      defaultSize: widgetDefaultSizes[widgetType],
-    }
-  })
+  Object.values(WidgetType)
+    .filter((widgetType) => isElectron() || widgetType !== WidgetType.PowerControl)
+    .map((widgetType) => {
+      return {
+        component: widgetType,
+        name: widgetType,
+        icon: widgetImages[widgetType] as string,
+        options: {},
+        defaultSize: widgetDefaultSizes[widgetType],
+      }
+    })
 )
 
 const allAvailableWidgets = computed(() => {
@@ -763,6 +770,10 @@ const availableCustomWidgetElementsTypes = computed(() =>
     managerVars: defaultMiniWidgetManagerVars,
   }))
 )
+const powerControlIcon = `data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#263238"/><path fill="#f5f7fa" d="${mdiPowerPlug}"/></svg>`
+)}`
+
 const widgetImages = {
   Attitude: AttitudeImg,
   CollapsibleContainer: CollapsibleContainerImg,
@@ -776,6 +787,7 @@ const widgetImages = {
   MiniWidgetsBar: MiniWidgetsBarImg,
   MissionControlPanel: MissionControlPanelImg,
   Plotter: PlotterImg,
+  PowerControl: powerControlIcon,
   URLVideoPlayer: URLVideoPlayerImg,
   VideoPlayer: VideoPlayerImg,
   VirtualHorizon: VirtualHorizonImg,

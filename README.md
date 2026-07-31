@@ -109,6 +109,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
 | **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |
 | **Workspace Capture** | ❌ Not available | ✅ Full interface screenshots |
+| **Power Control** | Hidden; saved layouts are preserved | Configurable RTU-over-TCP power control |
 | **Performance** | Standard | ✅ Optimized build for each system |
 | **Installation** | ✅ No install needed | Requires download |
 | **Multi-platform** | ✅ Any device | Windows, macOS, Linux |

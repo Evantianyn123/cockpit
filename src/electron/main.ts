@@ -10,6 +10,8 @@ import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
 import { setupNetworkService } from './services/network'
 import { setupOsmRefererService } from './services/osm-referer'
+import { closePowerModbusService, setupPowerModbusService } from './services/power-modbus'
+import { closePowerTcpDiagnosticService, setupPowerTcpDiagnosticService } from './services/power-tcp-diagnostic-service'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { setupFilesystemStorage } from './services/storage'
 import { setupSystemInfoService } from './services/system-info'
@@ -105,6 +107,8 @@ setupWorkspaceService()
 setupJoystickMonitoring()
 setupVideoRecordingService()
 setupGo2RTCService()
+setupPowerModbusService()
+setupPowerTcpDiagnosticService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')
@@ -126,6 +130,9 @@ app.whenReady().then(async () => {
 })
 
 app.on('before-quit', () => {
+  void closePowerModbusService()
+  void closePowerTcpDiagnosticService()
+
   if (appSuspensionPowerSaveBlockerId !== undefined && powerSaveBlocker.isStarted(appSuspensionPowerSaveBlockerId)) {
     powerSaveBlocker.stop(appSuspensionPowerSaveBlockerId)
     appSuspensionPowerSaveBlockerId = undefined

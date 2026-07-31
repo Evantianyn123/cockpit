@@ -5,6 +5,21 @@ import { ElectronStorageDB } from '@/types/general'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
 import { NetworkInfo } from '@/types/network'
 import type { TelemetrySystemHardwareInfo } from '@/types/platform'
+import type {
+  ModbusReadRequest,
+  ModbusReadResponse,
+  ModbusWriteRequest,
+  ModbusWriteResponse,
+  PowerModbusConnectionStatus,
+  PowerModbusResult,
+} from '@/types/power-modbus'
+import type {
+  PowerControlConnectionConfig,
+  PowerTcpDiagnosticEvent,
+  PowerTcpDiagnosticResult,
+  PowerTcpDiagnosticSendResponse,
+  PowerTcpDiagnosticStatus,
+} from '@/types/power-tcp-diagnostic'
 import { SDLStatus } from '@/types/sdl'
 import type { SerialData } from '@/types/serial'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
@@ -442,6 +457,71 @@ declare global {
        * @returns {Promise<TelemetrySystemHardwareInfo>} Serializable hardware fields
        */
       getHardwareTelemetryInfo: () => Promise<TelemetrySystemHardwareInfo>
+      /**
+       * Applies the TCP endpoint used by the managed Modbus RTU-over-TCP session.
+       * @param config - Persisted power-control connection configuration.
+       * @returns Connection status for the new disconnected endpoint.
+       */
+      powerModbusConfigure: (
+        config: PowerControlConnectionConfig
+      ) => Promise<PowerModbusResult<PowerModbusConnectionStatus>>
+      /**
+       * Opens the configured Modbus RTU-over-TCP connection.
+       * @returns {Promise<PowerModbusResult<PowerModbusConnectionStatus>>} Connection result.
+       */
+      powerModbusConnect: () => Promise<PowerModbusResult<PowerModbusConnectionStatus>>
+      /**
+       * Closes the Modbus RTU-over-TCP connection.
+       * @returns {Promise<PowerModbusResult<PowerModbusConnectionStatus>>} Disconnection result.
+       */
+      powerModbusDisconnect: () => Promise<PowerModbusResult<PowerModbusConnectionStatus>>
+      /**
+       * Gets the current Modbus TCP transport state.
+       * @returns {Promise<PowerModbusConnectionStatus>} Current connection status.
+       */
+      powerModbusGetStatus: () => Promise<PowerModbusConnectionStatus>
+      /**
+       * Reads holding or input registers through the managed Modbus connection.
+       * @param request - Register read definition.
+       * @returns {Promise<PowerModbusResult<ModbusReadResponse>>} Read result.
+       */
+      powerModbusRead: (request: ModbusReadRequest) => Promise<PowerModbusResult<ModbusReadResponse>>
+      /**
+       * Writes one or more registers through the managed Modbus connection.
+       * @param request - Register write definition.
+       * @returns {Promise<PowerModbusResult<ModbusWriteResponse>>} Write result.
+       */
+      powerModbusWrite: (request: ModbusWriteRequest) => Promise<PowerModbusResult<ModbusWriteResponse>>
+      /**
+       * Opens the raw TCP diagnostic connection using an explicit server endpoint.
+       * @param config - TCP Server connection configuration.
+       * @returns Diagnostic connection result.
+       */
+      powerTcpDiagnosticConnect: (
+        config: PowerControlConnectionConfig
+      ) => Promise<PowerTcpDiagnosticResult<PowerTcpDiagnosticStatus>>
+      /**
+       * Closes the raw TCP diagnostic connection.
+       * @returns Diagnostic disconnection result.
+       */
+      powerTcpDiagnosticDisconnect: () => Promise<PowerTcpDiagnosticResult<PowerTcpDiagnosticStatus>>
+      /**
+       * Gets the raw TCP diagnostic connection status.
+       * @returns Current diagnostic connection status.
+       */
+      powerTcpDiagnosticGetStatus: () => Promise<PowerTcpDiagnosticStatus>
+      /**
+       * Sends validated raw bytes through the diagnostic connection.
+       * @param data - Bytes to send.
+       * @returns Bytes accepted by the active socket or an error.
+       */
+      powerTcpDiagnosticSend: (data: number[]) => Promise<PowerTcpDiagnosticResult<PowerTcpDiagnosticSendResponse>>
+      /**
+       * Subscribes to raw TCP diagnostic lifecycle and byte events.
+       * @param callback - Event receiver.
+       * @returns Listener removal callback.
+       */
+      onPowerTcpDiagnosticEvent: (callback: (event: PowerTcpDiagnosticEvent) => void) => () => void
       /**
        * Start live video streaming process with FFmpeg
        * @param firstChunk - The first video chunk blob

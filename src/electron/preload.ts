@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
+import type { ModbusReadRequest, ModbusWriteRequest } from '@/types/power-modbus'
+import type { PowerControlConnectionConfig, PowerTcpDiagnosticEvent } from '@/types/power-tcp-diagnostic'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -97,4 +99,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCurrentUserAgent: () => ipcRenderer.invoke('get-current-user-agent'),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   getHardwareTelemetryInfo: () => ipcRenderer.invoke('get-hardware-telemetry-info'),
+  powerModbusConfigure: (config: PowerControlConnectionConfig) => ipcRenderer.invoke('power-modbus-configure', config),
+  powerModbusConnect: () => ipcRenderer.invoke('power-modbus-connect'),
+  powerModbusDisconnect: () => ipcRenderer.invoke('power-modbus-disconnect'),
+  powerModbusGetStatus: () => ipcRenderer.invoke('power-modbus-get-status'),
+  powerModbusRead: (request: ModbusReadRequest) => ipcRenderer.invoke('power-modbus-read', request),
+  powerModbusWrite: (request: ModbusWriteRequest) => ipcRenderer.invoke('power-modbus-write', request),
+  powerTcpDiagnosticConnect: (config: PowerControlConnectionConfig) =>
+    ipcRenderer.invoke('power-tcp-diagnostic-connect', config),
+  powerTcpDiagnosticDisconnect: () => ipcRenderer.invoke('power-tcp-diagnostic-disconnect'),
+  powerTcpDiagnosticGetStatus: () => ipcRenderer.invoke('power-tcp-diagnostic-get-status'),
+  powerTcpDiagnosticSend: (data: number[]) => ipcRenderer.invoke('power-tcp-diagnostic-send', data),
+  onPowerTcpDiagnosticEvent: (callback: (event: PowerTcpDiagnosticEvent) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, event: PowerTcpDiagnosticEvent): void => callback(event)
+    ipcRenderer.on('power-tcp-diagnostic-event', listener)
+    return () => ipcRenderer.removeListener('power-tcp-diagnostic-event', listener)
+  },
 })

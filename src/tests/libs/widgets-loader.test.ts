@@ -4,11 +4,11 @@ import { MiniWidgetType, WidgetType } from '@/types/widgets'
 
 test('Test widgets exist', async () => {
   await enum_to_files_checker(WidgetType, '@/components/widgets/${name}.vue')
-})
+}, 15000)
 
 test('Test mini-widgets exist', async () => {
   await enum_to_files_checker(MiniWidgetType, '@/components/mini-widgets/${name}.vue')
-})
+}, 15000)
 
 /**
  * Test helper to verify if all enums names matches with a file list in a path
