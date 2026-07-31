@@ -1,10 +1,29 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Interface configuration</template>
+    <template #title>{{ t('settings.interfaceConfiguration') }}</template>
     <template #content>
       <div class="max-h-[85vh] overflow-y-auto">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Window material</template>
+          <template #title>{{ t('settings.language') }}</template>
+          <template #content>
+            <div class="flex flex-wrap items-center w-full gap-3 px-4 py-4">
+              <v-select
+                :model-value="interfaceLocale"
+                :items="localeOptions"
+                item-title="title"
+                item-value="value"
+                variant="filled"
+                density="compact"
+                hide-details
+                class="max-w-[250px]"
+                @update:model-value="setApplicationLocale"
+              />
+              <span class="text-xs text-slate-300 opacity-75">{{ t('settings.languageHint') }}</span>
+            </div>
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>{{ t('settings.windowMaterial') }}</template>
           <template #content>
             <div class="flex w-full">
               <div class="flex flex-col w-full px-4 pt-5">
@@ -19,7 +38,7 @@
                     >
                       <template #activator="{ props }">
                         <div v-bind="props" class="flex cursor-pointer gap-x-[30px]">
-                          <span class="text-start mt-[2px]">Glass color</span>
+                          <span class="text-start mt-[2px]">{{ t('settings.glassColor') }}</span>
                           <div
                             class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg cursor-pointer"
                             :style="{ backgroundColor: interfaceStore.UIGlassEffect.bgColor }"
@@ -46,7 +65,7 @@
                     >
                       <template #activator="{ props }">
                         <div v-bind="props" class="flex gap-x-[30px]">
-                          <span class="text-start mt-[2px]">Font color</span>
+                          <span class="text-start mt-[2px]">{{ t('settings.fontColor') }}</span>
                           <div
                             v-bind="props"
                             class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg"
@@ -63,10 +82,12 @@
                       /></v-card>
                     </v-menu>
                   </div>
-                  <v-btn variant="text" size="small" @click="resetColorsToDefault">Reset to defaults</v-btn>
+                  <v-btn variant="text" size="small" @click="resetColorsToDefault">{{
+                    t('settings.resetToDefaults')
+                  }}</v-btn>
                 </div>
                 <div class="flex w-full">
-                  <div class="flex w-[33%] mt-[2px]">Opacity</div>
+                  <div class="flex w-[33%] mt-[2px]">{{ t('settings.opacity') }}</div>
                   <div class="flex w-[66%]">
                     <v-slider
                       :model-value="parseInt(interfaceStore.UIGlassEffect.bgColor.slice(-2), 16) / 255"
@@ -80,7 +101,7 @@
                   </div>
                 </div>
                 <div class="flex w-full">
-                  <div class="flex w-[33%] mt-[2px]">Blur</div>
+                  <div class="flex w-[33%] mt-[2px]">{{ t('settings.blur') }}</div>
                   <div class="flex w-[66%]">
                     <v-slider
                       v-model="interfaceStore.UIGlassEffect.blur"
@@ -97,16 +118,16 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Menu</template>
+          <template #title>{{ t('settings.menu') }}</template>
           <template #content>
             <div class="flex w-full">
               <div class="flex flex-col w-full px-4 pt-5">
                 <div class="flex flex-row justify-start items-center w-full mb-[35px]">
-                  <div class="flex w-[33%]">Main menu trigger position</div>
+                  <div class="flex w-[33%]">{{ t('settings.mainMenuPosition') }}</div>
                   <div class="flex w-[66%]">
                     <v-radio-group v-model="interfaceStore.mainMenuStyleTrigger" inline hide-details>
-                      <v-radio label="Center-left tab" value="center-left" />
-                      <v-radio label="Top bar button" value="burger" class="ml-6" />
+                      <v-radio :label="t('settings.centerLeftTab')" value="center-left" />
+                      <v-radio :label="t('settings.topBarButton')" value="burger" class="ml-6" />
                     </v-radio-group>
                   </div>
                 </div>
@@ -115,12 +136,12 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Display units</template>
+          <template #title>{{ t('settings.displayUnits') }}</template>
           <template #content>
             <div class="flex w-full">
               <div class="flex flex-col w-full px-4 pt-5">
                 <div class="flex flex-row justify-start items-center w-full mb-[35px]">
-                  <div class="flex w-[33%]">Distance</div>
+                  <div class="flex w-[33%]">{{ t('settings.distance') }}</div>
                   <div class="flex w-[66%]">
                     <v-radio-group v-model="interfaceStore.displayUnitPreferences.distance" inline hide-details>
                       <v-radio
@@ -145,14 +166,25 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { defaultUIGlassColor } from '@/assets/defaults'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import { setApplicationLocale } from '@/i18n'
+import { interfaceLocale } from '@/i18n/locale'
 import { DistanceDisplayUnit, unitPrettyName } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
+const { t } = useI18n()
+
+const localeOptions = computed(() => [
+  { title: t('settings.simplifiedChinese'), value: 'zh-CN' },
+  { title: t('settings.english'), value: 'en-US' },
+])
 
 const updateOpacity = (value: number): void => {
   interfaceStore.setBgOpacity(value)

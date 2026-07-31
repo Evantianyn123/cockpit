@@ -3,20 +3,32 @@
     <v-dialog :model-value="modelValue" max-width="1180" @update:model-value="updateVisible">
       <v-card class="power-settings-dialog" theme="dark">
         <v-card-title class="power-settings-title">
-          <span>电源控制设置</span>
+          <span>{{ t('powerControl.settings') }}</span>
           <span class="power-settings-state" :class="`connection-${connectionStatus.state}`">
             {{ connectionStateLabels[connectionStatus.state] }}
           </span>
-          <span class="power-settings-endpoint">当前生效：{{ connectionStatus.host }}:{{ connectionStatus.port }}</span>
+          <span class="power-settings-endpoint">{{ t('powerControl.currentEndpointApplied', connectionStatus) }}</span>
           <v-btn
-            v-tooltip.bottom="'导出配置'"
+            v-tooltip.bottom="t('powerControl.exportConfiguration')"
             icon="mdi-download"
             size="small"
             variant="text"
             @click="exportConfiguration"
           />
-          <v-btn v-tooltip.bottom="'导入配置'" icon="mdi-upload" size="small" variant="text" @click="openImport" />
-          <v-btn v-tooltip.bottom="'关闭'" icon="mdi-close" size="small" variant="text" @click="updateVisible(false)" />
+          <v-btn
+            v-tooltip.bottom="t('powerControl.importConfiguration')"
+            icon="mdi-upload"
+            size="small"
+            variant="text"
+            @click="openImport"
+          />
+          <v-btn
+            v-tooltip.bottom="t('common.close')"
+            icon="mdi-close"
+            size="small"
+            variant="text"
+            @click="updateVisible(false)"
+          />
           <input
             ref="importInput"
             class="power-settings-import"
@@ -28,18 +40,18 @@
 
         <v-card-text class="power-settings-content">
           <section class="power-settings-section">
-            <div class="power-settings-section-title">连接</div>
+            <div class="power-settings-section-title">{{ t('powerControl.connection') }}</div>
             <div class="power-settings-grid power-settings-connection-grid">
               <v-text-field
                 v-model="draftConnection.host"
-                label="TCP Server 地址"
+                :label="t('tcpDiagnostic.tcpServerAddress')"
                 density="compact"
                 variant="outlined"
                 hide-details
               />
               <v-text-field
                 v-model.number="draftConnection.port"
-                label="端口"
+                :label="t('common.port')"
                 type="number"
                 min="1"
                 max="65535"
@@ -49,7 +61,7 @@
               />
               <v-text-field
                 v-model.number="draftConnection.unitId"
-                label="从站地址"
+                :label="t('powerControl.unitId')"
                 type="number"
                 min="1"
                 max="247"
@@ -59,7 +71,7 @@
               />
               <v-text-field
                 v-model.number="draftConnection.requestTimeoutMs"
-                label="超时 (ms)"
+                :label="t('powerControl.timeout')"
                 type="number"
                 min="100"
                 max="10000"
@@ -70,7 +82,7 @@
             </div>
             <div class="power-settings-actions">
               <v-btn color="primary" prepend-icon="mdi-content-save" size="small" @click="applyConfiguration">
-                保存并应用
+                {{ t('common.saveAndApply') }}
               </v-btn>
               <v-btn
                 prepend-icon="mdi-lan-connect"
@@ -79,18 +91,18 @@
                 :disabled="isDirty"
                 @click="testConnection"
               >
-                连接测试
+                {{ t('powerControl.connectionTest') }}
               </v-btn>
             </div>
           </section>
 
           <section class="power-settings-section">
             <div class="power-settings-section-heading">
-              <div class="power-settings-section-title">通道</div>
+              <div class="power-settings-section-title">{{ t('powerControl.channels') }}</div>
               <v-text-field
                 v-model.number="channelCount"
                 class="power-settings-count"
-                label="通道数量"
+                :label="t('powerControl.channelQuantity')"
                 type="number"
                 min="1"
                 max="32"
@@ -104,18 +116,23 @@
               <article v-for="channel in draftConfiguration.channels" :key="channel.id" class="power-channel-config">
                 <div class="power-channel-heading">
                   <span class="power-channel-number">{{ String(channel.id).padStart(2, '0') }}</span>
-                  <v-checkbox v-model="channel.enabled" label="启用" density="compact" hide-details />
+                  <v-checkbox
+                    v-model="channel.enabled"
+                    :label="t('powerControl.enabled')"
+                    density="compact"
+                    hide-details
+                  />
                   <v-text-field
                     v-model="channel.name"
                     class="power-channel-name"
-                    label="通道名称"
+                    :label="t('powerControl.channelName')"
                     maxlength="40"
                     density="compact"
                     variant="outlined"
                     hide-details
                   />
                   <v-btn
-                    v-tooltip.bottom="'只读测试'"
+                    v-tooltip.bottom="t('powerControl.readOnlyTest')"
                     icon="mdi-database-search-outline"
                     size="x-small"
                     variant="text"
@@ -127,7 +144,7 @@
                 <div class="power-settings-grid power-channel-grid">
                   <v-select
                     v-model="channel.writeFunctionCode"
-                    label="写功能码"
+                    :label="t('powerControl.writeFunctionCode')"
                     :items="writeFunctionCodes"
                     density="compact"
                     variant="outlined"
@@ -135,7 +152,7 @@
                   />
                   <v-text-field
                     v-model.number="channel.writeAddress"
-                    label="写地址"
+                    :label="t('powerControl.writeAddress')"
                     type="number"
                     min="0"
                     max="65535"
@@ -145,7 +162,7 @@
                   />
                   <v-text-field
                     v-model.number="channel.onValue"
-                    label="开启值"
+                    :label="t('powerControl.writeOnValue')"
                     type="number"
                     min="0"
                     max="65535"
@@ -155,7 +172,7 @@
                   />
                   <v-text-field
                     v-model.number="channel.offValue"
-                    label="关闭值"
+                    :label="t('powerControl.writeOffValue')"
                     type="number"
                     min="0"
                     max="65535"
@@ -165,7 +182,7 @@
                   />
                   <v-select
                     v-model="channel.statusFunctionCode"
-                    label="读功能码"
+                    :label="t('powerControl.readFunctionCode')"
                     :items="readFunctionCodes"
                     density="compact"
                     variant="outlined"
@@ -173,7 +190,7 @@
                   />
                   <v-text-field
                     v-model.number="channel.statusAddress"
-                    label="状态地址"
+                    :label="t('powerControl.statusAddress')"
                     type="number"
                     min="0"
                     max="65535"
@@ -183,7 +200,7 @@
                   />
                   <v-text-field
                     v-model.number="channel.statusMask"
-                    label="状态掩码"
+                    :label="t('powerControl.statusMask')"
                     type="number"
                     min="0"
                     max="65535"
@@ -193,7 +210,7 @@
                   />
                   <v-text-field
                     v-model.number="channel.statusOnValue"
-                    label="开启期望值"
+                    :label="t('powerControl.statusOnValue')"
                     type="number"
                     min="0"
                     max="65535"
@@ -203,7 +220,7 @@
                   />
                   <v-text-field
                     v-model.number="channel.statusOffValue"
-                    label="关闭期望值"
+                    :label="t('powerControl.statusOffValue')"
                     type="number"
                     min="0"
                     max="65535"
@@ -229,6 +246,7 @@
 <script setup lang="ts">
 import saveAs from 'file-saver'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import {
   createPowerControlChannel,
@@ -262,6 +280,7 @@ const emit = defineEmits<{
   /** Reads one configured channel status without writing any register. */
   (event: 'read-test', channelId: number): void
 }>()
+const { t } = useI18n()
 
 /**
  * Creates an independent JSON-compatible copy for dialog editing.
@@ -279,12 +298,12 @@ const formError = ref<string | undefined>()
 const importInput = ref<HTMLInputElement | null>(null)
 const writeFunctionCodes = [5, 6, 16]
 const readFunctionCodes = [3, 4]
-const connectionStateLabels: Record<PowerModbusConnectionStatus['state'], string> = {
-  connected: '在线',
-  connecting: '连接中',
-  disconnected: '离线',
-  reconnecting: '重连中',
-}
+const connectionStateLabels = computed<Record<PowerModbusConnectionStatus['state'], string>>(() => ({
+  connected: t('powerControl.status.connected'),
+  connecting: t('powerControl.status.connecting'),
+  disconnected: t('powerControl.status.disconnected'),
+  reconnecting: t('powerControl.status.reconnecting'),
+}))
 
 const channelCount = computed<number>({
   get: () => draftConfiguration.value.channels.length,
@@ -307,12 +326,12 @@ const isDirty = computed(
 const validateDraft = (): PowerControlExportConfiguration | undefined => {
   const connection = powerControlConnectionConfigSchema.safeParse(draftConnection.value)
   if (!connection.success) {
-    formError.value = connection.error.issues[0]?.message ?? '连接配置无效。'
+    formError.value = connection.error.issues[0]?.message ?? t('powerControl.invalidConnectionConfiguration')
     return undefined
   }
   const powerControl = powerControlConfigurationSchema.safeParse(draftConfiguration.value)
   if (!powerControl.success) {
-    formError.value = powerControl.error.issues[0]?.message ?? '通道配置无效。'
+    formError.value = powerControl.error.issues[0]?.message ?? t('powerControl.invalidChannelConfiguration')
     return undefined
   }
   formError.value = undefined
@@ -327,7 +346,7 @@ const applyConfiguration = (): void => {
 
 const testConnection = (): void => {
   if (isDirty.value) {
-    formError.value = '请先保存并应用当前修改。'
+    formError.value = t('powerControl.saveBeforeTesting')
     return
   }
   formError.value = undefined
@@ -336,7 +355,7 @@ const testConnection = (): void => {
 
 const testRead = (channelId: number): void => {
   if (isDirty.value) {
-    formError.value = '请先保存并应用当前修改。'
+    formError.value = t('powerControl.saveBeforeTesting')
     return
   }
   formError.value = undefined
@@ -363,14 +382,14 @@ const importConfiguration = (event: Event): void => {
     try {
       const configuration = parsePowerControlExportConfiguration(JSON.parse(String(reader.result)))
       if (!configuration) {
-        formError.value = '配置文件格式无效。'
+        formError.value = t('powerControl.invalidConfigurationFile')
         return
       }
       draftConnection.value = clone(configuration.connection)
       draftConfiguration.value = clone(configuration.powerControl)
       formError.value = undefined
     } catch {
-      formError.value = '配置文件不是有效的 JSON。'
+      formError.value = t('powerControl.invalidJsonFile')
     }
   }
   reader.readAsText(file, 'utf-8')

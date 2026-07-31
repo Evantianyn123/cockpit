@@ -3,18 +3,24 @@
     <v-dialog :model-value="modelValue" max-width="720" @update:model-value="updateVisible">
       <v-card class="tcp-diagnostic-dialog" theme="dark">
         <v-card-title class="tcp-diagnostic-title">
-          <span>TCP Server 连接测试</span>
+          <span>{{ t('tcpDiagnostic.title') }}</span>
           <span class="connection-state" :class="`connection-${diagnosticStatus.state}`">
             {{ connectionStateLabels[diagnosticStatus.state] }}
           </span>
-          <v-btn v-tooltip.bottom="'关闭'" icon="mdi-close" size="small" variant="text" @click="closeDialog" />
+          <v-btn
+            v-tooltip.bottom="t('common.close')"
+            icon="mdi-close"
+            size="small"
+            variant="text"
+            @click="closeDialog"
+          />
         </v-card-title>
 
         <v-card-text class="tcp-diagnostic-content">
           <div class="tcp-config-grid">
             <v-text-field
               v-model="draftConfig.host"
-              label="TCP Server 地址"
+              :label="t('tcpDiagnostic.tcpServerAddress')"
               density="compact"
               variant="outlined"
               hide-details
@@ -23,7 +29,7 @@
             />
             <v-text-field
               v-model.number="draftConfig.port"
-              label="端口"
+              :label="t('common.port')"
               type="number"
               min="1"
               max="65535"
@@ -36,7 +42,9 @@
           </div>
 
           <div class="tcp-config-meta">
-            从站地址 {{ draftConfig.unitId }}，超时 {{ draftConfig.requestTimeoutMs }} ms
+            {{
+              t('tcpDiagnostic.unitAndTimeout', { unitId: draftConfig.unitId, timeout: draftConfig.requestTimeoutMs })
+            }}
           </div>
 
           <div class="tcp-connection-actions">
@@ -48,7 +56,7 @@
               :disabled="isBusy"
               @click="connect"
             >
-              保存并应用
+              {{ t('common.saveAndApply') }}
             </v-btn>
             <v-btn
               prepend-icon="mdi-lan-disconnect"
@@ -57,9 +65,9 @@
               :disabled="isBusy || !isConnected"
               @click="disconnect"
             >
-              断开
+              {{ t('tcpDiagnostic.disconnect') }}
             </v-btn>
-            <span class="tcp-active-endpoint">当前目标：{{ diagnosticStatus.host }}:{{ diagnosticStatus.port }}</span>
+            <span class="tcp-active-endpoint">{{ t('powerControl.currentEndpoint', diagnosticStatus) }}</span>
           </div>
 
           <p v-if="formError" class="tcp-form-error" role="alert">{{ formError }}</p>
@@ -67,7 +75,7 @@
           <div class="tcp-send-area">
             <v-textarea
               v-model="hexPayload"
-              label="发送 HEX 数据"
+              :label="t('tcpDiagnostic.hexPayload')"
               placeholder="01 03 00 00 00 01 84 0A"
               rows="2"
               auto-grow
@@ -83,16 +91,16 @@
               :disabled="isBusy || !isConnected || !parsedPayload.ok"
               @click="send"
             >
-              发送
+              {{ t('tcpDiagnostic.sent') }}
             </v-btn>
           </div>
           <p v-if="hexPayload && !parsedPayload.ok" class="tcp-form-error" role="alert">{{ parsedPayload.error }}</p>
 
-          <section class="tcp-log-section" aria-label="TCP 数据收发日志">
+          <section class="tcp-log-section" :aria-label="t('tcpDiagnostic.log')">
             <div class="tcp-log-heading">
-              <span>收发日志</span>
+              <span>{{ t('tcpDiagnostic.log') }}</span>
               <v-btn
-                v-tooltip.bottom="'清空日志'"
+                v-tooltip.bottom="t('tcpDiagnostic.clearLog')"
                 icon="mdi-delete-sweep"
                 size="x-small"
                 variant="text"
@@ -100,7 +108,7 @@
               />
             </div>
             <div class="tcp-log" role="log">
-              <p v-if="logs.length === 0" class="tcp-empty-log">等待连接和数据收发。</p>
+              <p v-if="logs.length === 0" class="tcp-empty-log">{{ t('tcpDiagnostic.noLog') }}</p>
               <div v-for="entry in logs" :key="entry.id" class="tcp-log-entry" :class="`tcp-log-${entry.type}`">
                 <span>{{ formatTime(entry.timestamp) }}</span>
                 <span>{{ logTypeLabels[entry.type] }}</span>
@@ -116,6 +124,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import {
@@ -169,6 +178,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', visible: boolean): void
 }>()
+const { locale, t } = useI18n()
 
 const connectionConfig = useBlueOsStorage<PowerControlConnectionConfig>(
   POWER_CONTROL_CONNECTION_STORAGE_KEY,
@@ -187,23 +197,25 @@ const isBusy = ref(false)
 let nextLogId = 0
 let removeEventListener: (() => void) | undefined
 
-const connectionStateLabels: Record<PowerTcpDiagnosticStatus['state'], string> = {
-  connected: '已连接',
-  connecting: '连接中',
-  disconnected: '未连接',
-}
-const logTypeLabels: Record<PowerTcpDiagnosticEvent['type'], string> = {
-  connected: '连接',
-  sent: '发送',
-  received: '接收',
-  disconnected: '断开',
-  error: '错误',
-}
+const connectionStateLabels = computed<Record<PowerTcpDiagnosticStatus['state'], string>>(() => ({
+  connected: t('common.connected'),
+  connecting: t('common.connecting'),
+  disconnected: t('tcpDiagnostic.disconnected'),
+}))
+const logTypeLabels = computed<Record<PowerTcpDiagnosticEvent['type'], string>>(() => ({
+  connected: t('tcpDiagnostic.connect'),
+  sent: t('tcpDiagnostic.sent'),
+  received: t('tcpDiagnostic.received'),
+  disconnected: t('tcpDiagnostic.disconnect'),
+  error: t('common.error'),
+}))
 const parsedPayload = computed(() => parseHexPayload(hexPayload.value))
 const isConnected = computed(() => diagnosticStatus.value.state === 'connected')
 
 const formatLogPayload = (entry: TcpLogEntry): string =>
-  entry.data ? `${entry.data.length} 字节  ${formatHexPayload(entry.data)}` : entry.message ?? ''
+  entry.data
+    ? t('tcpDiagnostic.payload', { count: entry.data.length, payload: formatHexPayload(entry.data) })
+    : entry.message ?? ''
 
 const savedConfig = (): PowerControlConnectionConfig => {
   const parsed = powerControlConnectionConfigSchema.safeParse(connectionConfig.value)
@@ -223,7 +235,7 @@ const refreshStatus = async (): Promise<void> => {
 const saveAndApplyConfig = (): PowerControlConnectionConfig | undefined => {
   const parsed = powerControlConnectionConfigSchema.safeParse(draftConfig.value)
   if (!parsed.success) {
-    formError.value = parsed.error.issues[0]?.message ?? 'TCP Server 配置无效。'
+    formError.value = parsed.error.issues[0]?.message ?? t('powerControl.invalidConnectionConfiguration')
     return undefined
   }
 
@@ -286,7 +298,7 @@ const updateVisible = (visible: boolean): void => {
 }
 
 const formatTime = (timestamp: number): string =>
-  new Date(timestamp).toLocaleTimeString('zh-CN', {
+  new Date(timestamp).toLocaleTimeString(locale.value, {
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',

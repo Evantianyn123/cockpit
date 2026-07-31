@@ -5,7 +5,7 @@
     @click="() => emit('update:editMode', false)"
   >
     <v-btn icon="mdi-close" size="54" class="bg-[#334a5755] text-[#FFFFFFCC] text-[28px] rounded-full elevation-5" />
-    <div class="ml-2 mt-[7px] text-[26px]">Exit</div>
+    <div class="ml-2 mt-[7px] text-[26px]">{{ t('edit.exit') }}</div>
   </div>
   <div v-if="editMode" class="flex fixed top-0 left-0 h-[100vh] w-[22vw] bg-[#031C2B]" />
   <div
@@ -16,7 +16,9 @@
       <div class="pt-1 bg-[#041e2e99] pb-2">
         <div class="flex justify-center w-full bg-[#CBCBCB09] relative">
           <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
-            <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">Views</p>
+            <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">
+              {{ t('edit.views') }}
+            </p>
           </div>
           <v-menu offset-y theme="dark">
             <template #activator="{ props: buttonProps }">
@@ -31,7 +33,7 @@
             <v-list>
               <v-list-item class="hover:bg-white/[0.04]">
                 <label class="flex w-full h-full cursor-pointer justify-between">
-                  <v-list-item-title>Import views</v-list-item-title>
+                  <v-list-item-title>{{ t('edit.importViews') }}</v-list-item-title>
                   <input
                     type="file"
                     accept="application/json"
@@ -43,25 +45,27 @@
               </v-list-item>
               <v-list-item @click="store.exportViewsGroup(store.currentProfile)">
                 <div class="flex w-full justify-between">
-                  <v-list-item-title>Export views</v-list-item-title>
+                  <v-list-item-title>{{ t('edit.exportViews') }}</v-list-item-title>
                   <v-icon size="20">mdi-download</v-icon>
                 </div>
               </v-list-item>
               <v-list-item @click="openVehicleDefaultsImportModal">
                 <div class="flex w-full justify-between">
-                  <v-list-item-title class="mr-6">Import vehicle defaults</v-list-item-title>
+                  <v-list-item-title class="mr-6">{{ t('edit.importVehicleDefaults') }}</v-list-item-title>
                   <v-icon size="20">mdi-import</v-icon>
                 </div>
               </v-list-item>
               <v-list-item @click="store.snapToGrid = !store.snapToGrid">
                 <div class="flex w-full justify-between mt-[6px]">
-                  <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
+                  <v-list-item-title>{{
+                    store.snapToGrid ? t('edit.disableGrid') : t('edit.enableGrid')
+                  }}</v-list-item-title>
                   <v-icon size="22">{{ store.snapToGrid ? 'mdi-grid' : 'mdi-grid-off' }}</v-icon>
                 </div>
               </v-list-item>
               <v-list-item @click="resetViewsGroup">
                 <div class="flex w-full justify-between mt-[6px]">
-                  <v-list-item-title class="mr-6">Reset to default</v-list-item-title>
+                  <v-list-item-title class="mr-6">{{ t('edit.resetToDefault') }}</v-list-item-title>
                   <v-icon size="20" class="mt-[2px]">mdi-reload</v-icon>
                 </div>
               </v-list-item>
@@ -109,7 +113,7 @@
     <div class="flex justify-center w-full bg-[#CBCBCB09] shrink-0">
       <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
         <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">
-          Widgets in {{ store.currentView.name }}
+          {{ t('edit.widgetsIn', { name: store.currentView.name }) }}
         </p>
       </div>
     </div>
@@ -127,7 +131,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Main view area
+            {{ t('edit.mainViewArea') }}
             <v-badge
               :content="store.currentView.widgets.length"
               color="#4FA483"
@@ -195,7 +199,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Top Bar
+            {{ t('edit.topBar') }}
             <v-badge
               :content="
                 store.miniWidgetContainersInCurrentView.reduce((count, container) => {
@@ -262,7 +266,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Bottom Bar
+            {{ t('edit.bottomBar') }}
             <v-badge
               :content="
                 store.miniWidgetContainersInCurrentView.reduce((count, container) => {
@@ -386,13 +390,13 @@
       class="flex flex-col justify-around items-center 2xl:w-[30%] w-[25%] max-w-[240px] h-full text-white 2xl:pr-2 px-1 2xl:py-5 xl:py-4 lg:py-1"
     >
       <div>
-        <p class="2xl:text-md text-xs ml-1">Widget type:</p>
+        <p class="2xl:text-md text-xs ml-1">{{ t('edit.widgetType') }}</p>
         <v-select
           v-model="widgetMode"
           theme="dark"
           variant="filled"
           density="compact"
-          :items="['Regular', 'Mini', 'Input']"
+          :items="widgetModes"
           class="bg-[#27384255] 2xl:scale-100 scale-[80%]"
           hide-details
           @change="widgetMode = $event"
@@ -400,19 +404,23 @@
       </div>
       <div class="flex flex-col items-center justify-start w-full pl-2">
         <div v-show="widgetMode === 'Regular'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
-          To be placed on the main view area
+          {{ t('edit.toBePlacedInMainView') }}
         </div>
-        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
+        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">
+          {{ t('edit.dragCardToAdd') }}
+        </div>
         <div v-show="widgetMode === 'Mini'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
-          To be placed on the top and bottom bars
+          {{ t('edit.toBePlacedInBars') }}
         </div>
-        <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
+        <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">
+          {{ t('edit.dragCardToAdd') }}
+        </div>
         <div v-show="widgetMode === 'Input'">
           <v-btn
             type="flat"
             class="bg-[#FFFFFF33] text-white w-[95%]"
             @click="store.addWidget(makeNewWidget(WidgetType.CollapsibleContainer), store.currentView)"
-            >Add new container
+            >{{ t('edit.addContainer') }}
           </v-btn>
         </div>
       </div>
@@ -442,7 +450,7 @@
           v-if="widget.isExternal"
           class="absolute top-0 left-0 bg-[#135da3] text-white text-xs px-1 py-0.5 rounded-tl-md rounded-br-md"
         >
-          External
+          {{ t('edit.external') }}
         </div>
 
         <v-tooltip location="top" theme="light">
@@ -460,7 +468,7 @@
           </template>
           <div class="text-center">
             <div v-if="widget.isExternal">{{ widget.name }}</div>
-            <div>Drag to add</div>
+            <div>{{ t('edit.dragToAdd') }}</div>
           </div>
         </v-tooltip>
       </div>
@@ -527,19 +535,19 @@
     <GlassModal :is-visible="viewRenameDialogRevealed" class="rounded-lg">
       <v-card class="bg-transparent text-white w-[36rem] pt-6 px-4 pb-2">
         <v-card-text>
-          <p>New view name</p>
+          <p>{{ t('edit.newViewName') }}</p>
           <v-text-field v-model="newViewName" counter="25" variant="filled" />
           <v-switch
             v-model="store.currentView.showBottomBarOnBoot"
-            label="Show bottom bar on boot"
+            :label="t('edit.showBottomBarOnBoot')"
             class="mt-2 mx-2"
             :color="store.currentView.showBottomBarOnBoot ? 'white' : undefined"
           />
         </v-card-text>
         <v-divider />
         <v-card-actions class="flex justify-between pt-3">
-          <v-btn @click="viewRenameDialog.cancel">Cancel</v-btn>
-          <v-btn @click="viewRenameDialog.confirm">Save</v-btn>
+          <v-btn @click="viewRenameDialog.cancel">{{ t('common.cancel') }}</v-btn>
+          <v-btn @click="viewRenameDialog.confirm">{{ t('common.saveAndApply') }}</v-btn>
         </v-card-actions>
       </v-card>
     </GlassModal>
@@ -557,6 +565,7 @@ import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
 import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
+import { useI18n } from 'vue-i18n'
 
 import { defaultMiniWidgetManagerVars } from '@/assets/defaults'
 import AttitudeImg from '@/assets/widgets/Attitude.png'
@@ -608,6 +617,7 @@ const { showDialog, closeDialog } = useInteractionDialog()
 
 const interfaceStore = useAppInterfaceStore()
 const store = useWidgetManagerStore()
+const { t } = useI18n()
 const mainVehicleStore = useMainVehicleStore()
 
 const openVehicleDefaultsImportModal = (): void => {
@@ -933,6 +943,11 @@ onMounted(() => {
 })
 
 const widgetMode = ref('Regular')
+const widgetModes = computed(() => [
+  { title: t('edit.regular'), value: 'Regular' },
+  { title: t('edit.mini'), value: 'Mini' },
+  { title: t('edit.input'), value: 'Input' },
+])
 
 // Resize mini widgets so they fit the layout when the widget mode is set to mini widgets
 const miniWidgetContainers = ref<Record<string, HTMLElement>>({})

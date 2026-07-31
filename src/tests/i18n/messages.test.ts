@@ -1,0 +1,57 @@
+import { afterEach, describe, expect, test } from 'vitest'
+
+import {
+  DEFAULT_INTERFACE_LOCALE,
+  INTERFACE_LANGUAGE_STORAGE_KEY,
+  readStoredLocale,
+  resolveLocale,
+} from '@/i18n/locale'
+import { translationLeafPaths, translationPlaceholders } from '@/i18n/messages'
+import { enUS } from '@/i18n/messages/en-US'
+import { zhCN } from '@/i18n/messages/zh-CN'
+
+const originalStoredLocale = localStorage.getItem(INTERFACE_LANGUAGE_STORAGE_KEY)
+
+/**
+ * Resolves one nested translation leaf by dotted path.
+ * @param {Record<string, unknown>} messages Translation tree.
+ * @param {string} path Dotted translation path.
+ * @returns {string} Translation leaf value.
+ */
+function messageAt(messages: Record<string, unknown>, path: string): string {
+  return path
+    .split('.')
+    .reduce<unknown>((current, key) => (current as Record<string, unknown>)[key], messages) as string
+}
+
+afterEach(() => {
+  if (originalStoredLocale === null) localStorage.removeItem(INTERFACE_LANGUAGE_STORAGE_KEY)
+  else localStorage.setItem(INTERFACE_LANGUAGE_STORAGE_KEY, originalStoredLocale)
+})
+
+describe('Cockpit interface language', () => {
+  test('defaults invalid or missing values to simplified Chinese', () => {
+    localStorage.removeItem(INTERFACE_LANGUAGE_STORAGE_KEY)
+    expect(readStoredLocale()).toBe(DEFAULT_INTERFACE_LOCALE)
+    expect(resolveLocale('en-US')).toBe('en-US')
+    expect(resolveLocale('zh-CN')).toBe('zh-CN')
+    expect(resolveLocale('fr-FR')).toBe(DEFAULT_INTERFACE_LOCALE)
+  })
+
+  test('uses a valid persisted language preference', () => {
+    localStorage.setItem(INTERFACE_LANGUAGE_STORAGE_KEY, 'en-US')
+    expect(readStoredLocale()).toBe('en-US')
+  })
+
+  test('keeps Chinese and English translation keys and placeholders aligned', () => {
+    const englishPaths = translationLeafPaths(enUS)
+    const chinesePaths = translationLeafPaths(zhCN)
+
+    expect(chinesePaths).toEqual(englishPaths)
+    englishPaths.forEach((path) => {
+      expect(messageAt(enUS, path)).not.toBe('')
+      expect(messageAt(zhCN, path)).not.toBe('')
+      expect(translationPlaceholders(messageAt(zhCN, path))).toEqual(translationPlaceholders(messageAt(enUS, path)))
+    })
+  })
+})
