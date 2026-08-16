@@ -177,6 +177,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:modelValue', visible: boolean): void
+  /** Notifies the power-control widget that a valid shared endpoint was saved. */
+  (event: 'connection-config-applied', config: PowerControlConnectionConfig): void
 }>()
 const { locale, t } = useI18n()
 
@@ -244,6 +246,7 @@ const saveAndApplyConfig = (): PowerControlConnectionConfig | undefined => {
   void settingsManager.setKeyValue(POWER_CONTROL_CONNECTION_STORAGE_KEY, nextConfig)
   draftConfig.value = { ...nextConfig }
   formError.value = undefined
+  emit('connection-config-applied', nextConfig)
   return nextConfig
 }
 

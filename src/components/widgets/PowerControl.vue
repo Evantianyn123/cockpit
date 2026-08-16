@@ -1,14 +1,19 @@
 <template>
-  <section class="power-control-widget" :aria-label="t('powerControl.title')">
+  <section class="power-control-widget" :class="{ 'is-collapsed': isCollapsed }" :aria-label="t('powerControl.title')">
     <header class="power-control-header">
       <div class="widget-title">
         <v-icon icon="mdi-power-plug" size="16" />
         <span>{{ t('powerControl.title') }}</span>
-        <span class="integration-label">{{ t('powerControl.formalConfiguration') }}</span>
+        <span class="connection-state" :class="`connection-${connectionStatus.state}`">
+          {{ connectionStateLabels[connectionStatus.state] }}
+        </span>
       </div>
       <div class="header-actions">
+        <span class="connection-endpoint" :title="`${connectionStatus.host}:${connectionStatus.port}`">
+          {{ connectionStatus.host }}:{{ connectionStatus.port }}
+        </span>
         <v-btn
-          v-if="isElectron()"
+          v-if="isSessionOwner && isElectron()"
           v-tooltip.bottom="t('powerControl.settings')"
           icon="mdi-cog-outline"
           size="x-small"
@@ -16,40 +21,40 @@
           @click.stop="settingsDialogOpen = true"
         />
         <v-btn
-          v-if="isElectron()"
+          v-if="isSessionOwner && isElectron()"
           v-tooltip.bottom="t('powerControl.rawTcpTest')"
           icon="mdi-lan-connect"
           size="x-small"
           variant="text"
           @click.stop="tcpTestDialogOpen = true"
         />
-        <span class="connection-state" :class="`connection-${connectionStatus.state}`">
-          {{ connectionStateLabels[connectionStatus.state] }}
-        </span>
+        <v-btn
+          v-if="isSessionOwner"
+          v-tooltip.bottom="isCollapsed ? t('powerControl.expand') : t('powerControl.collapse')"
+          :icon="isCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up'"
+          size="x-small"
+          variant="text"
+          @click.stop="toggleCollapsed"
+        />
       </div>
     </header>
 
-    <div class="connection-details">
-      {{ connectionStatus.host }}:{{ connectionStatus.port }} · {{ t('powerControl.unitId') }}
-      {{ activeConnectionConfig.unitId }} ·
-      {{ t('powerControl.channelCount', { count: activeChannels.length }) }}
+    <div v-if="!isCollapsed && !isSessionOwner" class="empty-state">
+      <v-icon icon="mdi-information-outline" size="18" />
+      <span>{{ t('powerControl.singleInstance') }}</span>
     </div>
-
-    <div v-if="activeChannels.length === 0" class="empty-state">
+    <div v-else-if="!isCollapsed && activeChannels.length === 0" class="empty-state">
       <v-icon icon="mdi-power-settings" size="18" />
       <span>{{ t('powerControl.noChannels') }}</span>
     </div>
-    <div v-else class="channel-list">
+    <div v-else-if="!isCollapsed" class="channel-list">
       <div
         v-for="channel in activeChannels"
         :key="channel.id"
         class="channel-row"
         :data-power-state="displayedState(channel)"
       >
-        <div class="channel-identity">
-          <span class="channel-number">{{ String(channel.id).padStart(2, '0') }}</span>
-          <span class="channel-name" data-cockpit-no-localize>{{ channel.name }}</span>
-        </div>
+        <span class="channel-name" data-cockpit-no-localize>{{ channel.name }}</span>
 
         <div class="channel-state" :class="`state-${displayedState(channel)}`">
           <v-progress-circular v-if="displayedState(channel) === 'executing'" indeterminate size="12" width="2" />
@@ -84,7 +89,9 @@
       </div>
     </div>
 
-    <p class="transport-message" :title="displayedTransportMessage">{{ displayedTransportMessage }}</p>
+    <p v-if="visibleTransportMessage" class="transport-message" :title="visibleTransportMessage">
+      {{ visibleTransportMessage }}
+    </p>
     <PowerControlSettingsDialog
       v-if="isElectron()"
       v-model="settingsDialogOpen"
@@ -95,12 +102,17 @@
       @connection-test="testConnection"
       @read-test="testRead"
     />
-    <PowerTcpConnectionTestDialog v-if="isElectron()" v-model="tcpTestDialogOpen" />
+    <PowerTcpConnectionTestDialog
+      v-if="isElectron()"
+      v-model="tcpTestDialogOpen"
+      @connection-config-applied="applyDiagnosticConnectionConfig"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, onUnmounted, ref, toRefs } from 'vue'
+import { useWindowSize } from '@vueuse/core'
+import { computed, onBeforeMount, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PowerControlSettingsDialog from '@/components/widgets/PowerControlSettingsDialog.vue'
@@ -132,6 +144,18 @@ import type { Widget } from '@/types/widgets'
 
 type PowerCommand = 'on' | 'off'
 type PowerDisplayedState = PowerChannelState | 'executing'
+const collapsedHeaderHeightPx = 38
+let activePowerControlWidgetHash: string | undefined
+
+/**
+ *
+ */
+interface PowerControlInternalState {
+  /**
+   *
+   */
+  expandedHeight?: number
+}
 
 /** One channel's readback and in-flight command state. */
 interface PowerChannelRuntime {
@@ -150,6 +174,7 @@ const props = defineProps<{
 
 const widget = toRefs(props).widget
 const { t } = useI18n()
+const { height: windowHeight } = useWindowSize()
 const connectionConfig = useBlueOsStorage<PowerControlConnectionConfig>(
   POWER_CONTROL_CONNECTION_STORAGE_KEY,
   DEFAULT_POWER_CONTROL_CONNECTION_CONFIG
@@ -171,6 +196,8 @@ const transportMessageRaw = ref<string | undefined>()
 const isTransportBusy = ref(false)
 const settingsDialogOpen = ref(false)
 const tcpTestDialogOpen = ref(false)
+const isSessionOwner = ref(false)
+const isCollapsed = computed(() => Boolean(widget.value.options.collapsed))
 const stateMeta = computed<Record<PowerDisplayedState, string>>(() => ({
   on: t('powerControl.status.on'),
   off: t('powerControl.status.off'),
@@ -186,6 +213,9 @@ const connectionStateLabels = computed<Record<PowerModbusConnectionStatus['state
 }))
 const displayedTransportMessage = computed(
   () => transportMessageRaw.value ?? t(transportMessageKey.value, transportMessageParameters.value)
+)
+const visibleTransportMessage = computed(
+  () => transportMessageRaw.value ?? (isTransportBusy.value ? displayedTransportMessage.value : undefined)
 )
 
 /**
@@ -214,6 +244,47 @@ let lifecycleGeneration = 0
 let lastSuccessfulReadAt = 0
 
 const activeChannels = computed(() => powerControlConfiguration.value.channels.filter((channel) => channel.enabled))
+
+/**
+ * Returns the persisted internal state for this widget.
+ * @returns {PowerControlInternalState} State that must survive refreshes but is not user configuration.
+ */
+const getInternalState = (): PowerControlInternalState => {
+  if (!widget.value.persistentInternalState) widget.value.persistentInternalState = {}
+  return widget.value.persistentInternalState as PowerControlInternalState
+}
+
+const collapsedHeightNormalized = (): number => collapsedHeaderHeightPx / Math.max(windowHeight.value, 1)
+
+const keepWidgetInViewport = (): void => {
+  widget.value.size.height = Math.min(1, Math.max(collapsedHeightNormalized(), widget.value.size.height))
+  widget.value.position.y = Math.min(1 - widget.value.size.height, Math.max(0, widget.value.position.y))
+}
+
+const applyCollapsedGeometry = (): void => {
+  if (isCollapsed.value) {
+    widget.value.size.height = collapsedHeightNormalized()
+  } else if (getInternalState().expandedHeight) {
+    widget.value.size.height = getInternalState().expandedHeight!
+  }
+  keepWidgetInViewport()
+}
+
+const toggleCollapsed = (): void => {
+  if (isCollapsed.value) {
+    widget.value.options.collapsed = false
+  } else {
+    getInternalState().expandedHeight = widget.value.size.height
+    widget.value.options.collapsed = true
+  }
+  applyCollapsedGeometry()
+}
+
+const claimPowerControlSession = (): boolean => {
+  if (activePowerControlWidgetHash && activePowerControlWidgetHash !== widget.value.hash) return false
+  activePowerControlWidgetHash = widget.value.hash
+  return true
+}
 
 const savedConnectionConfig = (): PowerControlConnectionConfig => {
   const parsed = powerControlConnectionConfigSchema.safeParse(connectionConfig.value)
@@ -321,7 +392,7 @@ const readConfiguredChannels = async (generation: number): Promise<boolean> => {
 }
 
 const pollChannels = async (): Promise<void> => {
-  if (isTransportBusy.value) return
+  if (!isSessionOwner.value || isTransportBusy.value) return
   isTransportBusy.value = true
   const generation = lifecycleGeneration
   try {
@@ -360,6 +431,27 @@ const connectAndPoll = async (): Promise<void> => {
   if (!result.ok) setTransportError(result.error.message)
   else connectionStatus.value = result.value
   await pollChannels()
+}
+
+const applyConnectionConfiguration = async (config: PowerControlConnectionConfig): Promise<void> => {
+  activeConnectionConfig.value = { ...config }
+  if (!isSessionOwner.value || !window.electronAPI) return
+
+  lifecycleGeneration += 1
+  resetRuntime()
+  isTransportBusy.value = true
+  try {
+    if (!(await configureConnection(config))) return
+    const result = await window.electronAPI.powerModbusConnect()
+    if (!result.ok) setTransportError(result.error.message)
+    else {
+      connectionStatus.value = result.value
+      setTransportMessage('powerControl.savedAndReading')
+      await readConfiguredChannels(lifecycleGeneration)
+    }
+  } finally {
+    isTransportBusy.value = false
+  }
 }
 
 const requestState = async (channel: PowerControlChannelConfig, command: PowerCommand): Promise<void> => {
@@ -413,21 +505,13 @@ const applySettings = async (configuration: PowerControlExportConfiguration): Pr
     settingsManager.setKeyValue(POWER_CONTROL_CONFIGURATION_STORAGE_KEY, configuration.powerControl),
   ])
 
-  lifecycleGeneration += 1
-  resetRuntime()
-  isTransportBusy.value = true
-  try {
-    if (!(await configureConnection(configuration.connection))) return
-    const result = await window.electronAPI!.powerModbusConnect()
-    if (!result.ok) setTransportError(result.error.message)
-    else {
-      connectionStatus.value = result.value
-      setTransportMessage('powerControl.savedAndReading')
-      await readConfiguredChannels(lifecycleGeneration)
-    }
-  } finally {
-    isTransportBusy.value = false
-  }
+  await applyConnectionConfiguration(configuration.connection)
+}
+
+const applyDiagnosticConnectionConfig = async (config: PowerControlConnectionConfig): Promise<void> => {
+  connectionConfig.value = config
+  await settingsManager.setKeyValue(POWER_CONTROL_CONNECTION_STORAGE_KEY, config)
+  await applyConnectionConfiguration(config)
 }
 
 const testConnection = async (): Promise<void> => {
@@ -478,14 +562,21 @@ const testRead = async (channelId: number): Promise<void> => {
 onBeforeMount(() => {
   widget.value.options = {
     powerControlVersion: 1,
+    collapsed: false,
     ...widget.value.options,
   }
+  if (!getInternalState().expandedHeight && !isCollapsed.value) {
+    getInternalState().expandedHeight = widget.value.size.height
+  }
+  applyCollapsedGeometry()
   activeConnectionConfig.value = { ...savedConnectionConfig() }
   powerControlConfiguration.value = savedPowerControlConfiguration()
   resetRuntime()
 })
 
 onMounted(() => {
+  isSessionOwner.value = claimPowerControlSession()
+  if (!isSessionOwner.value) return
   void connectAndPoll()
   pollTimer = window.setInterval(() => void pollChannels(), 1000)
 })
@@ -493,8 +584,19 @@ onMounted(() => {
 onUnmounted(() => {
   lifecycleGeneration += 1
   if (pollTimer !== undefined) window.clearInterval(pollTimer)
+  if (activePowerControlWidgetHash !== widget.value.hash) return
+  activePowerControlWidgetHash = undefined
   void window.electronAPI?.powerModbusDisconnect()
 })
+
+watch(
+  () => widget.value.size.height,
+  (height) => {
+    if (!isCollapsed.value && Number.isFinite(height) && height > 0) getInternalState().expandedHeight = height
+  }
+)
+
+watch(windowHeight, () => applyCollapsedGeometry())
 </script>
 
 <style scoped>
@@ -514,10 +616,13 @@ onUnmounted(() => {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
 }
 
+.power-control-widget.is-collapsed {
+  min-height: 38px;
+}
+
 .power-control-header,
 .widget-title,
 .header-actions,
-.channel-identity,
 .channel-actions,
 .channel-state,
 .empty-state {
@@ -535,6 +640,7 @@ onUnmounted(() => {
 }
 
 .header-actions {
+  min-width: 0;
   flex: 0 0 auto;
   gap: 4px;
 }
@@ -556,19 +662,22 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.integration-label,
 .connection-state {
   padding: 1px 4px;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 4px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
 }
 
-.integration-label {
-  color: #ffe082;
-  border-color: rgba(255, 224, 130, 0.38);
+.connection-endpoint {
+  max-width: min(32cqw, 180px);
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .connection-connected {
@@ -586,7 +695,6 @@ onUnmounted(() => {
   color: rgba(255, 255, 255, 0.62);
 }
 
-.connection-details,
 .transport-message {
   margin: 0;
   padding: 4px 8px;
@@ -605,31 +713,13 @@ onUnmounted(() => {
 }
 
 .channel-row {
-  min-height: 44px;
+  min-height: 40px;
   padding: 2px 7px;
   display: grid;
-  grid-template-columns: minmax(118px, 1fr) minmax(80px, 0.65fr) 150px;
+  grid-template-columns: minmax(118px, 1fr) minmax(70px, 0.55fr) 150px;
   align-items: center;
   gap: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.channel-identity {
-  min-width: 0;
-  gap: 7px;
-}
-
-.channel-number {
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  display: grid;
-  place-items: center;
-  color: rgba(255, 255, 255, 0.72);
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
 }
 
 .channel-name {
@@ -679,8 +769,8 @@ onUnmounted(() => {
 }
 
 .channel-actions :deep(.v-btn) {
-  width: 72px;
-  height: 29px;
+  width: 70px;
+  height: 27px;
   padding: 0 6px;
   font-size: 11px;
 }
@@ -711,10 +801,6 @@ onUnmounted(() => {
     align-items: flex-start;
   }
 
-  .integration-label {
-    display: none;
-  }
-
   .channel-row {
     grid-template-columns: minmax(100px, 1fr) 150px;
     gap: 2px 8px;
@@ -724,7 +810,6 @@ onUnmounted(() => {
   .channel-state {
     grid-column: 1;
     grid-row: 2;
-    padding-left: 31px;
   }
 
   .channel-actions {

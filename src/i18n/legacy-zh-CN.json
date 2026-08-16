@@ -170,6 +170,7 @@
   "Shift": "切换",
   "SHIFT": "切换",
   "No function": "无功能",
+  "Only one Power Control widget can be added.": "电源控制组件仅允许添加一个。",
   "unassigned": "未分配",
   "Vehicle disconnected": "载具已断开连接",
   "Process videos in real-time during recording for instant availability when recording stops": "录制期间实时处理视频，录制结束后可立即使用",

@@ -740,7 +740,14 @@ const makeWidgetUnique = (widget: InternalWidgetSetupInfo): InternalWidgetSetupI
 
 const availableInternalWidgets = computed(() =>
   Object.values(WidgetType)
-    .filter((widgetType) => isElectron() || widgetType !== WidgetType.PowerControl)
+    .filter(
+      (widgetType) =>
+        (isElectron() || widgetType !== WidgetType.PowerControl) &&
+        (widgetType !== WidgetType.PowerControl ||
+          !store.currentProfile.views.some((view) =>
+            view.widgets.some((existingWidget) => existingWidget.component === WidgetType.PowerControl)
+          ))
+    )
     .map((widgetType) => {
       return {
         component: widgetType,

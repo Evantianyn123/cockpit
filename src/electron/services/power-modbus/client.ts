@@ -179,9 +179,15 @@ export class ModbusRtuTcpClient {
       socket.setKeepAlive(true, this.reconnectDelayMs)
 
       let settled = false
+      const connectionTimeout = setTimeout(() => {
+        const error = new Error('Power Modbus TCP connection timed out.')
+        settle(failure('TIMEOUT', error.message))
+        this.handleConnectionLoss(socket, error, 'TIMEOUT')
+      }, this.requestTimeoutMs)
       const settle = (result: PowerModbusResult<PowerModbusConnectionStatus>): void => {
         if (settled) return
         settled = true
+        clearTimeout(connectionTimeout)
         resolve(result)
       }
 

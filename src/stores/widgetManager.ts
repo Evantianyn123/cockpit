@@ -490,6 +490,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { Point2D } dropPosition - Optional position where the widget was dropped by the user
    */
   function addWidget(widget: InternalWidgetSetupInfo, view: View, dropPosition?: Point2D): void {
+    if (
+      widget.component === WidgetType.PowerControl &&
+      currentProfile.value.views.some((profileView) =>
+        profileView.widgets.some((existingWidget) => existingWidget.component === WidgetType.PowerControl)
+      )
+    ) {
+      showDialog({ variant: 'error', message: 'Only one Power Control widget can be added.' })
+      return
+    }
+
     const widgetHash = uuid4()
 
     const newWidget: Widget = {
