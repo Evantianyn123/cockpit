@@ -23,6 +23,13 @@ const excludedElementSelector =
 const dynamicTextPatterns: ReadonlyArray<readonly [RegExp, string]> = [
   [/^Channel (\d+)$/, '通道 $1'],
   [/^Joystick (\d+)$/, '摇杆 $1'],
+  [/^axis (\d+)$/i, '轴 $1'],
+  [/^button (\d+)$/i, '按键 $1'],
+  [/^Waypoint (\d+)$/, '航点 $1'],
+  [/^Param (\d+):$/, '参数 $1：'],
+  [/^Step (\d+) of (\d+)$/, '第 $1 步，共 $2 步'],
+  [/^(.+) controller$/, '$1 控制器'],
+  [/^Button (\d+) remapped to function '(.+)'\.$/, '按键 $1 已重新映射为功能“$2”。'],
   [/^(\d+) channels enabled$/, '已启用 $1 路通道'],
   [/^Must be <= (\d+)$/, '必须小于或等于 $1'],
 ]
@@ -39,7 +46,12 @@ export function localizeLegacyText(value: string, locale: SupportedLocale): stri
   const leadingWhitespace = value.match(/^\s*/)?.[0] ?? ''
   const trailingWhitespace = value.match(/\s*$/)?.[0] ?? ''
   const content = value.trim()
-  const translated = translations[content as keyof typeof translations] ?? translateDynamicText(content)
+  const normalizedContent = content.replace(/\s+/g, ' ')
+  const translated =
+    translations[content as keyof typeof translations] ??
+    translations[normalizedContent as keyof typeof translations] ??
+    translateDynamicText(content) ??
+    translateDynamicText(normalizedContent)
 
   return translated === undefined ? value : `${leadingWhitespace}${translated}${trailingWhitespace}`
 }

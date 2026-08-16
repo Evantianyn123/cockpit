@@ -60,6 +60,11 @@ describe('Cockpit interface language', () => {
   test('translates legacy interface text while preserving English mode', () => {
     expect(localizeLegacyText('Video configuration', 'zh-CN')).toBe('视频设置')
     expect(localizeLegacyText('Channel 8', 'zh-CN')).toBe('通道 8')
+    expect(localizeLegacyText('axis 0', 'zh-CN')).toBe('轴 0')
+    expect(localizeLegacyText('button 2', 'zh-CN')).toBe('按键 2')
+    expect(localizeLegacyText('Waypoint 3', 'zh-CN')).toBe('航点 3')
+    expect(localizeLegacyText('Step 2 of 4', 'zh-CN')).toBe('第 2 步，共 4 步')
+    expect(localizeLegacyText('Video\n configuration', 'zh-CN')).toBe('视频设置')
     expect(localizeLegacyText('MAVLink2REST URI', 'zh-CN')).toBe('MAVLink2REST URI')
     expect(localizeLegacyText('Video configuration', 'en-US')).toBe('Video configuration')
   })
