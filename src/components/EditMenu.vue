@@ -85,7 +85,9 @@
               class="view-drag-handle cursor-grab mr-1 -ml-[1px] opacity-40 2xl:text-[24px] xl:text-[22px] text-[18px]"
             />
             <v-divider vertical />
-            <p class="overflow-hidden text-sm text-ellipsis ml-3 whitespace-nowrap">{{ view.name }}</p>
+            <p class="overflow-hidden text-sm text-ellipsis ml-3 whitespace-nowrap" data-cockpit-no-localize>
+              {{ view.name }}
+            </p>
             <div class="grow" />
             <div
               class="icon-btn mdi mdi-eye"
@@ -165,7 +167,10 @@
                     class="cursor-grab mr-1 -ml-[1px] opacity-40 2xl:text-[24px] xl:text-[22px] text-[18px]"
                   />
                   <v-divider vertical />
-                  <p class="ml-3 overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap">
+                  <p
+                    class="ml-3 overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap"
+                    data-cockpit-no-localize
+                  >
                     {{ widget.name }}
                   </p>
                   <div class="grow" />
@@ -237,7 +242,10 @@
                     @mouseleave="store.miniWidgetManagerVars(widget.hash).highlighted = false"
                   >
                     <div class="flex items-center justify-start w-full overflow-auto">
-                      <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
+                      <p
+                        class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3"
+                        data-cockpit-no-localize
+                      >
                         {{ widget.name || widget.component }}
                       </p>
                     </div>
@@ -307,7 +315,10 @@
                     @mouseleave="store.miniWidgetManagerVars(widget.hash).highlighted = false"
                   >
                     <div class="flex items-center justify-start w-full overflow-auto">
-                      <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
+                      <p
+                        class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3"
+                        data-cockpit-no-localize
+                      >
                         {{ widget.name || widget.component }}
                       </p>
                     </div>
@@ -365,7 +376,10 @@
                   @mouseleave="store.miniWidgetManagerVars(widget.hash).highlighted = false"
                 >
                   <div class="flex items-center justify-start w-full overflow-auto">
-                    <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
+                    <p
+                      class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3"
+                      data-cockpit-no-localize
+                    >
                       {{ widget.name || widget.component }}
                     </p>
                   </div>
@@ -467,7 +481,7 @@
             </div>
           </template>
           <div class="text-center">
-            <div v-if="widget.isExternal">{{ widget.name }}</div>
+            <div v-if="widget.isExternal" data-cockpit-no-localize>{{ widget.name }}</div>
             <div>{{ t('edit.dragToAdd') }}</div>
           </div>
         </v-tooltip>

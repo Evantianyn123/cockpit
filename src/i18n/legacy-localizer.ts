@@ -54,7 +54,7 @@ export function startLegacyLocalizer(): void {
   let pending = false
   const localize = (): void => {
     pending = false
-    localizeDocument(interfaceLocale.value)
+    localizeLegacyDocument(interfaceLocale.value)
   }
   const schedule = (): void => {
     if (pending) return
@@ -76,7 +76,7 @@ export function startLegacyLocalizer(): void {
  * @param {SupportedLocale} locale Active Cockpit interface locale.
  * @returns {void}
  */
-function localizeDocument(locale: SupportedLocale): void {
+export function localizeLegacyDocument(locale: SupportedLocale): void {
   const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
   let textNode = treeWalker.nextNode() as Text | null
   while (textNode !== null) {

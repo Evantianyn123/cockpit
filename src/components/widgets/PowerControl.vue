@@ -48,7 +48,7 @@
       >
         <div class="channel-identity">
           <span class="channel-number">{{ String(channel.id).padStart(2, '0') }}</span>
-          <span class="channel-name">{{ channel.name }}</span>
+          <span class="channel-name" data-cockpit-no-localize>{{ channel.name }}</span>
         </div>
 
         <div class="channel-state" :class="`state-${displayedState(channel)}`">

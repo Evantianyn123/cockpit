@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { localizeLegacyText } from '@/i18n/legacy-localizer'
+import { localizeLegacyDocument, localizeLegacyText } from '@/i18n/legacy-localizer'
 import {
   DEFAULT_INTERFACE_LOCALE,
   INTERFACE_LANGUAGE_STORAGE_KEY,
@@ -28,6 +28,7 @@ function messageAt(messages: Record<string, unknown>, path: string): string {
 afterEach(() => {
   if (originalStoredLocale === null) localStorage.removeItem(INTERFACE_LANGUAGE_STORAGE_KEY)
   else localStorage.setItem(INTERFACE_LANGUAGE_STORAGE_KEY, originalStoredLocale)
+  document.body.innerHTML = ''
 })
 
 describe('Cockpit interface language', () => {
@@ -61,5 +62,14 @@ describe('Cockpit interface language', () => {
     expect(localizeLegacyText('Channel 8', 'zh-CN')).toBe('通道 8')
     expect(localizeLegacyText('MAVLink2REST URI', 'zh-CN')).toBe('MAVLink2REST URI')
     expect(localizeLegacyText('Video configuration', 'en-US')).toBe('Video configuration')
+  })
+
+  test('does not translate user-authored labels that match interface text', () => {
+    document.body.innerHTML = '<p>Map</p><p data-cockpit-no-localize>Map</p>'
+
+    localizeLegacyDocument('zh-CN')
+
+    expect(document.body.children[0].textContent).toBe('地图')
+    expect(document.body.children[1].textContent).toBe('Map')
   })
 })
