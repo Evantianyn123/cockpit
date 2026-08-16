@@ -1,8 +1,14 @@
 import Store from 'electron-store'
 
+import type { ApplicationLocale } from '../../types/app-language'
+
 const electronStoreSchema = {
   cockpitFolderPath: {
     type: 'string',
+  },
+  appLanguage: {
+    type: 'string',
+    enum: ['zh-CN', 'en-US'],
   },
   windowBounds: {
     type: 'object',
@@ -28,6 +34,10 @@ const electronStoreSchema = {
  * Stores configuration data
  */
 export interface ElectronStoreSchema {
+  /**
+   * Last accepted interface language from the renderer process.
+   */
+  appLanguage: ApplicationLocale | undefined
   /**
    * Custom Cockpit folder path, overriding the default ~/Cockpit
    */

@@ -26,6 +26,7 @@ export function setApplicationLocale(value: unknown): SupportedLocale {
   i18n.global.locale.value = locale
   updateVuetifyLocale(locale)
   if (typeof document !== 'undefined') document.documentElement.lang = locale
+  void window.electronAPI?.appLanguageSet?.(locale)
   return locale
 }
 

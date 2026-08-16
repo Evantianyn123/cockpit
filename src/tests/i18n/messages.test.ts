@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'vitest'
 
+import { localizeLegacyText } from '@/i18n/legacy-localizer'
 import {
   DEFAULT_INTERFACE_LOCALE,
   INTERFACE_LANGUAGE_STORAGE_KEY,
@@ -53,5 +54,12 @@ describe('Cockpit interface language', () => {
       expect(messageAt(zhCN, path)).not.toBe('')
       expect(translationPlaceholders(messageAt(zhCN, path))).toEqual(translationPlaceholders(messageAt(enUS, path)))
     })
+  })
+
+  test('translates legacy interface text while preserving English mode', () => {
+    expect(localizeLegacyText('Video configuration', 'zh-CN')).toBe('视频设置')
+    expect(localizeLegacyText('Channel 8', 'zh-CN')).toBe('通道 8')
+    expect(localizeLegacyText('MAVLink2REST URI', 'zh-CN')).toBe('MAVLink2REST URI')
+    expect(localizeLegacyText('Video configuration', 'en-US')).toBe('Video configuration')
   })
 })

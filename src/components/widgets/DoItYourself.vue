@@ -3,6 +3,7 @@
   <div class="main">
     <div
       class="w-full h-full"
+      data-cockpit-no-localize
       :style="widget.options.inheritCockpitStyles ? interfaceStore.globalGlassMenuStyles : {}"
       v-html="compiledCode"
     />

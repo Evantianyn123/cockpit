@@ -1,10 +1,12 @@
 import { ref } from 'vue'
 
+import { type ApplicationLocale, isApplicationLocale, supportedApplicationLocales } from '@/types/app-language'
+
 export const INTERFACE_LANGUAGE_STORAGE_KEY = 'cockpit-interface-language-v1'
 export const DEFAULT_INTERFACE_LOCALE = 'zh-CN'
-export const supportedLocales = ['zh-CN', 'en-US'] as const
+export const supportedLocales = supportedApplicationLocales
 
-export type SupportedLocale = (typeof supportedLocales)[number]
+export type SupportedLocale = ApplicationLocale
 
 /**
  * Checks whether a value is a supported Cockpit interface locale.
@@ -12,7 +14,7 @@ export type SupportedLocale = (typeof supportedLocales)[number]
  * @returns {boolean} True when the value is a supported locale.
  */
 export function isSupportedLocale(value: unknown): value is SupportedLocale {
-  return typeof value === 'string' && supportedLocales.includes(value as SupportedLocale)
+  return isApplicationLocale(value)
 }
 
 /**

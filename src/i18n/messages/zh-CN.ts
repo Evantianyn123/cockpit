@@ -136,6 +136,7 @@ export const zhCN = {
       unknown: '未知',
     },
     timeout: '超时 (ms)',
+    title: '电源控制',
     unitId: '从站地址',
     writeAddress: '写地址',
     writeFunctionCode: '写功能码',

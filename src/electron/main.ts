@@ -1,6 +1,7 @@
 import { app, BrowserWindow, powerSaveBlocker, protocol, screen } from 'electron'
 import { join } from 'path'
 
+import { setupAppLanguageService } from './services/app-language'
 import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
@@ -98,6 +99,7 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 setupFilesystemStorage()
+setupAppLanguageService()
 setupNetworkService()
 setupResourceMonitoringService()
 setupSystemInfoService()

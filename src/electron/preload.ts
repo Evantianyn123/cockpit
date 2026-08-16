@@ -6,6 +6,7 @@ import type { PowerControlConnectionConfig, PowerTcpDiagnosticEvent } from '@/ty
 import type { FileDialogOptions, FileStats } from '@/types/storage'
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  appLanguageSet: (locale: string) => ipcRenderer.invoke('app-language-set', locale),
   getInfoOnSubnets: () => ipcRenderer.invoke('get-info-on-subnets'),
   getResourceUsage: () => ipcRenderer.invoke('get-resource-usage'),
   onUpdateAvailable: (callback: (info: any) => void) =>

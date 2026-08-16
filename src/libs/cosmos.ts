@@ -217,6 +217,12 @@ declare global {
      */
     electronAPI?: ElectronStorageDB & {
       /**
+       * Persists the renderer-selected application language for desktop-native surfaces.
+       * @param locale - Supported Cockpit interface locale.
+       * @returns True when the main process accepts the locale.
+       */
+      appLanguageSet: (locale: import('@/types/app-language').ApplicationLocale) => Promise<boolean>
+      /**
        * Get network information from the main process
        * @returns Promise containing subnet information
        */

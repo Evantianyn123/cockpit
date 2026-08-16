@@ -134,6 +134,7 @@ export const enUS = {
       unknown: 'Unknown',
     },
     timeout: 'Timeout (ms)',
+    title: 'Power control',
     unitId: 'Unit ID',
     writeAddress: 'Write address',
     writeFunctionCode: 'Write function code',
