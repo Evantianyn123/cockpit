@@ -143,6 +143,9 @@ export const zhCN = {
     writeOffValue: '关闭值',
     writeOnValue: '开启值',
   },
+  splash: {
+    loading: '正在启动 Cockpit…',
+  },
   tcpDiagnostic: {
     clearLog: '清空日志',
     connect: '连接',
@@ -157,5 +160,20 @@ export const zhCN = {
     tcpServerAddress: 'TCP Server 地址',
     title: 'TCP Server 连接测试',
     unitAndTimeout: '从站地址 {unitId}，超时 {timeout} ms',
+  },
+  vehicleDiscovery: {
+    addressUpdated: '载具地址已更新',
+    description: '此工具可在当前网络中查找并连接 BlueOS 载具。',
+    dontShowAgain: '不再显示',
+    foundVehicles: '目前已发现 {count} 个载具…',
+    noVehiclesFound: '当前网络中未发现载具。',
+    notConnected: '当前未连接载具！',
+    searchAgain: '再次搜索',
+    searchForVehicles: '搜索载具',
+    searchFromSettings: '仍可在通用设置菜单中搜索载具。',
+    searchingDescription: '正在搜索当前网络中的载具…',
+    searchingTitle: '正在搜索载具…',
+    title: '载具发现',
+    vehiclesFound: '已发现载具！',
   },
 } satisfies AppMessages

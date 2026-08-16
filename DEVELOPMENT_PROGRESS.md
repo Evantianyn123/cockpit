@@ -112,6 +112,6 @@ M2 范围：实现单通道 RTU-over-TCP 客户端；不连接 `192.168.2.1:502`
 
 进行中：全面覆盖主界面、设置、任务规划、视频、摇杆、遥测、告警、Actions、DataLake、DIY 编辑器、开发工具、教程、关于、Widget 和用户可见错误提示。保留 Cockpit、BlueOS、MAVLink、协议字段、飞控模式、日志原文和用户输入内容。L2 未经人工验收不得启动 M4。
 
-自动验证：2026-08-16，新增运行时旧界面文本翻译、简体中文/英文切换、Vuetify 同步及桌面语言镜像。用户自定义的视图名、Widget 名、通道名和 DIY HTML 已排除在通用 DOM 翻译之外。`yarn lint:fix`、`yarn typecheck`、`yarn test:ci`（46 项）和 `yarn build` 均通过。
+自动验证：2026-08-16，新增运行时旧界面文本翻译、简体中文/英文切换、Vuetify 同步及桌面语言镜像；“载具发现”启动弹窗及加载页已接入翻译资源。用户自定义的视图名、Widget 名、通道名和 DIY HTML 已排除在通用 DOM 翻译之外。`yarn lint:fix`、`yarn typecheck`、`yarn test:ci`（46 项）和 `yarn build` 均通过。
 
 人工验收待办：检查中文和英文即时切换、重启后语言保持、用户自定义名称不被翻译、DIY 内容不变，以及常用主界面和电源控制界面无文字截断。用户确认 L2 后，才可开始 M3.5-A。

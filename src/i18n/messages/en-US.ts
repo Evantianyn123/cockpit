@@ -141,6 +141,9 @@ export const enUS = {
     writeOffValue: 'Off value',
     writeOnValue: 'On value',
   },
+  splash: {
+    loading: 'Starting Cockpit...',
+  },
   tcpDiagnostic: {
     clearLog: 'Clear log',
     connect: 'Connect',
@@ -155,5 +158,20 @@ export const enUS = {
     tcpServerAddress: 'TCP Server address',
     title: 'TCP Server connection test',
     unitAndTimeout: 'Unit ID {unitId}, timeout {timeout} ms',
+  },
+  vehicleDiscovery: {
+    addressUpdated: 'Vehicle address updated',
+    description: 'This tool allows you to locate and connect to BlueOS vehicles within your network.',
+    dontShowAgain: "Don't show again",
+    foundVehicles: 'Found {count} vehicles so far...',
+    noVehiclesFound: 'No vehicles found in your network.',
+    notConnected: "It looks like you're not connected to a vehicle!",
+    searchAgain: 'Search again',
+    searchForVehicles: 'Search for vehicles',
+    searchFromSettings: 'You can still search for vehicles in the general configuration menu.',
+    searchingDescription: 'Searching for vehicles in your network...',
+    searchingTitle: 'Searching for vehicles...',
+    title: 'Vehicle Discovery',
+    vehiclesFound: 'Vehicles found!',
   },
 } as const
