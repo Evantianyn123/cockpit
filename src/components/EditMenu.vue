@@ -565,7 +565,7 @@
 </template>
 
 <script setup lang="ts">
-import { mdiPowerPlug } from '@mdi/js'
+import { mdiPowerPlug, mdiRobotIndustrial } from '@mdi/js'
 import { useConfirmDialog } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
@@ -799,6 +799,9 @@ const availableCustomWidgetElementsTypes = computed(() =>
 const powerControlIcon = `data:image/svg+xml,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#263238"/><path fill="#f5f7fa" d="${mdiPowerPlug}"/></svg>`
 )}`
+const robotModelIcon = `data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#263238"/><path fill="#f5f7fa" d="${mdiRobotIndustrial}"/></svg>`
+)}`
 
 const widgetImages = {
   Attitude: AttitudeImg,
@@ -814,6 +817,7 @@ const widgetImages = {
   MissionControlPanel: MissionControlPanelImg,
   Plotter: PlotterImg,
   PowerControl: powerControlIcon,
+  RobotModel3D: robotModelIcon,
   URLVideoPlayer: URLVideoPlayerImg,
   VideoPlayer: VideoPlayerImg,
   VirtualHorizon: VirtualHorizonImg,

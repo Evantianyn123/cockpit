@@ -146,6 +146,13 @@ export const zhCN = {
     writeOffValue: '关闭值',
     writeOnValue: '开启值',
   },
+  robotModel: {
+    loading: '正在加载机器人模型…',
+    noAttitude: '无姿态数据',
+    title: '三维机器人',
+    unavailable: 'WebGL 不可用。',
+    unableToLoad: '无法加载机器人模型。',
+  },
   splash: {
     loading: '正在启动 Cockpit…',
   },

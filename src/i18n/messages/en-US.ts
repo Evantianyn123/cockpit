@@ -144,6 +144,13 @@ export const enUS = {
     writeOffValue: 'Off value',
     writeOnValue: 'On value',
   },
+  robotModel: {
+    loading: 'Loading robot model...',
+    noAttitude: 'No attitude data',
+    title: '3D robot',
+    unavailable: 'WebGL is unavailable.',
+    unableToLoad: 'Unable to load robot model.',
+  },
   splash: {
     loading: 'Starting Cockpit...',
   },
