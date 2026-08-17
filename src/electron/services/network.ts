@@ -1,19 +1,22 @@
 import { ipcMain } from 'electron'
+import { createConnection, Socket } from 'net'
 import { networkInterfaces } from 'os'
 
 import { NetworkInfo } from '../../types/network'
 
 /**
  * Interface name prefixes that are virtual / non-physical and should be skipped
- * during vehicle discovery: VPN tunnels, container/VM bridges, Apple wireless
- * peer-to-peer interfaces, IPSec, etc. None of these can carry a BlueOS vehicle.
+ * during vehicle discovery; none of these can carry a BlueOS vehicle.
+ *
+ * SD-WAN / VPN overlays (ZeroTier `zt*` / macOS `feth*`, WireGuard `wg*`,
+ * Tailscale `tailscale*` / macOS `utun*`) are intentionally NOT skipped: they
+ * are routinely used to reach remote vehicles.
  */
 const VIRTUAL_INTERFACE_PREFIXES = [
   'awdl', // Apple Wireless Direct Link
   'br-', // Docker user-defined bridge
   'bridge', // macOS bridge
   'docker', // Docker default bridge
-  'feth', // macOS fake ethernet (Docker / virtualization)
   'gif', // macOS generic tunnel
   'ipsec', // IPSec tunnel
   'llw', // Apple low-latency wifi
@@ -21,17 +24,68 @@ const VIRTUAL_INTERFACE_PREFIXES = [
   'stf', // macOS 6to4 tunnel
   'tap', // generic TAP device
   'tun', // generic TUN device
-  'utun', // macOS userland tunnel (VPN)
   'vboxnet', // VirtualBox host-only
   'veth', // Linux virtual ethernet pair
   'vmnet', // VMware host-only / NAT
-  'wg', // WireGuard
-  'zt', // ZeroTier
 ]
 
 const isVirtualInterface = (interfaceName: string): boolean => {
   const lower = interfaceName.toLowerCase()
   return VIRTUAL_INTERFACE_PREFIXES.some((prefix) => lower.startsWith(prefix))
+}
+
+/**
+ * Discovery scan order. Lower tier scans first, so vehicles on a wired or
+ * wireless LAN are typically reported before we even start sweeping a
+ * ZeroTier-style overlay.
+ *
+ * - Tier 0: Linux/Windows ethernet (`eth*`, `enp*`, `eno*`, `ens*`, `enx*`,
+ *   Windows "Ethernet")
+ * - Tier 1: Linux/Windows wireless (`wlan*`, `wlp*`, `wlx*`, `ww*`, Windows
+ *   "Wi-Fi" / "Wireless")
+ * - Tier 2: macOS `en[0-9]+` (ambiguous wired/wireless, but always a regular
+ *   local link)
+ * - Tier 3: everything else (SD-WAN / VPN overlays — ZeroTier `feth*` / `zt*`,
+ *   WireGuard `wg*`, Tailscale `tailscale*` / `utun*`, …)
+ * @param {string} interfaceName Name reported by os.networkInterfaces()
+ * @returns {number} Lower numbers scan first
+ */
+const interfaceScanTier = (interfaceName: string): number => {
+  const lower = interfaceName.toLowerCase()
+  if (/^(eth|eno|enp|ens|enx)/.test(lower) || lower.startsWith('ethernet')) return 0
+  if (/^(wlan|wlp|wlx|ww)/.test(lower) || lower.startsWith('wi-fi') || lower.startsWith('wireless')) return 1
+  if (/^en\d/.test(lower)) return 2
+  return 3
+}
+
+/**
+ * Smallest prefix length we are willing to expand (i.e. widest subnet we scan).
+ * /16 = 65 534 hosts. Anything wider would balloon the scan, and the next step
+ * down (/8) would mean ~16M hosts which is clearly nonsense for discovery.
+ */
+const MIN_PREFIX_LENGTH = 16
+
+/**
+ * Expand an IPv4 subnet into every host address it contains (excluding network
+ * and broadcast). Wider-than-MIN_PREFIX_LENGTH subnets are clamped to /16.
+ * @param {string} address Host's own IPv4 address (e.g. "172.24.97.147")
+ * @param {number} prefixLength CIDR prefix length parsed from the interface
+ * @returns {string[]} All host addresses in the (possibly clamped) subnet
+ */
+const expandSubnet = (address: string, prefixLength: number): string[] => {
+  const effectivePrefix = Math.max(prefixLength, MIN_PREFIX_LENGTH)
+  const ipToInt = (ip: string): number =>
+    ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0
+  const intToIp = (n: number): string => [(n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff].join('.')
+
+  const hostInt = ipToInt(address)
+  const mask = effectivePrefix === 0 ? 0 : (0xffffffff << (32 - effectivePrefix)) >>> 0
+  const networkInt = (hostInt & mask) >>> 0
+  const broadcastInt = (networkInt | (~mask >>> 0)) >>> 0
+
+  const addresses: string[] = []
+  for (let i = networkInt + 1; i < broadcastInt; i++) addresses.push(intToIp(i >>> 0))
+  return addresses
 }
 
 /**
@@ -74,25 +128,39 @@ const getInfoOnSubnets = (): NetworkInfo[] => {
     throw new Error('No network interfaces found.')
   }
 
+  ipv4Subnets.sort((a, b) => {
+    const tierDelta = interfaceScanTier(a.interfaceName) - interfaceScanTier(b.interfaceName)
+    return tierDelta !== 0 ? tierDelta : a.interfaceName.localeCompare(b.interfaceName)
+  })
+
   const result = ipv4Subnets.map((subnet) => {
-    // TODO: Use the mask to calculate the available addresses. The current implementation is not correct for anything else than /24.
-    const subnetPrefix = subnet.address.split('.').slice(0, 3).join('.')
-    const availableAddresses: string[] = []
-    for (let i = 1; i <= 254; i++) {
-      availableAddresses.push(`${subnetPrefix}.${i}`)
+    const declaredPrefix = Number(subnet.cidr?.split('/')[1] ?? 24)
+    const prefixLength = Number.isFinite(declaredPrefix) ? declaredPrefix : 24
+    const availableAddresses = expandSubnet(subnet.address, prefixLength)
+
+    if (prefixLength < MIN_PREFIX_LENGTH) {
+      console.log(
+        `[VehicleDiscovery] Interface ${subnet.interfaceName} declares /${prefixLength}; clamping scan to /${MIN_PREFIX_LENGTH} (${availableAddresses.length} addresses).`
+      )
     }
 
     return {
       topSideAddress: subnet.address,
       macAddress: subnet.mac,
       interfaceName: subnet.interfaceName,
+      tier: interfaceScanTier(subnet.interfaceName),
       availableAddresses,
     }
   })
 
   console.log(
-    `[VehicleDiscovery] Subnets to scan: ${JSON.stringify(
-      result.map((s) => ({ iface: s.interfaceName, top: s.topSideAddress, count: s.availableAddresses.length }))
+    `[VehicleDiscovery] Subnets to scan (preferred order): ${JSON.stringify(
+      result.map((s) => ({
+        iface: s.interfaceName,
+        tier: s.tier,
+        top: s.topSideAddress,
+        count: s.availableAddresses.length,
+      }))
     )}`
   )
 
@@ -100,8 +168,58 @@ const getInfoOnSubnets = (): NetworkInfo[] => {
 }
 
 /**
+ * Sockets opened by `checkTcpPortOpen` that haven't settled yet. Tracked so the
+ * renderer can tear them down on demand when the user aborts a discovery scan.
+ */
+const inFlightProbeSockets = new Set<Socket>()
+
+/**
+ * Probe a TCP port with a short timeout. Used as a fast pre-filter during
+ * vehicle discovery: most addresses on a wide subnet either have no route
+ * (ICMP unreachable, fails in tens of ms) or no listener (RST, similar), so
+ * a TCP connect culls them far faster than the heavier HTTP `/status` probe.
+ * @param {string} host IPv4 address to probe
+ * @param {number} port TCP port to probe
+ * @param {number} timeoutMs Time to wait before giving up
+ * @returns {Promise<boolean>} true if the port accepted the connection
+ */
+const checkTcpPortOpen = (host: string, port: number, timeoutMs: number): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const socket = createConnection({ host, port })
+    inFlightProbeSockets.add(socket)
+    let settled = false
+    const settle = (open: boolean): void => {
+      if (settled) return
+      settled = true
+      inFlightProbeSockets.delete(socket)
+      socket.destroy()
+      resolve(open)
+    }
+    socket.setTimeout(timeoutMs)
+    socket.once('connect', () => settle(true))
+    socket.once('timeout', () => settle(false))
+    socket.once('error', () => settle(false))
+  })
+}
+
+/**
+ * Tear down every still-open `checkTcpPortOpen` socket. Pending probes resolve
+ * `false` via the `'error'` event their destroyed socket emits.
+ */
+const abortInFlightTcpProbes = (): void => {
+  if (inFlightProbeSockets.size === 0) return
+  console.log(`[VehicleDiscovery] Aborting ${inFlightProbeSockets.size} in-flight TCP probe socket(s).`)
+  for (const socket of inFlightProbeSockets) socket.destroy()
+  inFlightProbeSockets.clear()
+}
+
+/**
  * Setup the network service
  */
 export const setupNetworkService = (): void => {
   ipcMain.handle('get-info-on-subnets', getInfoOnSubnets)
+  ipcMain.handle('check-tcp-port-open', (_event, host: string, port: number, timeoutMs: number) =>
+    checkTcpPortOpen(host, port, timeoutMs)
+  )
+  ipcMain.handle('abort-tcp-port-probes', abortInFlightTcpProbes)
 }

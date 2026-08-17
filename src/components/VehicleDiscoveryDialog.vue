@@ -1,9 +1,9 @@
 <template>
   <InteractionDialog
     v-model="isOpen"
-    :title="searching ? t('vehicleDiscovery.searchingTitle') : t('vehicleDiscovery.title')"
+    :title="displaySearching ? t('vehicleDiscovery.searchingTitle') : t('vehicleDiscovery.title')"
     :actions="dialogActions"
-    :persistent="searching"
+    :persistent="displaySearching"
     :variant="'text-only'"
   >
     <template #content>
@@ -11,14 +11,18 @@
         <div class="text-sm mb-4">{{ t('vehicleDiscovery.searchFromSettings') }}</div>
       </div>
       <div v-else class="flex flex-col items-center justify-center gap-4 min-w-[300px] min-h-[100px]">
-        <div v-if="searching" class="flex flex-col items-center gap-2 mb-2">
+        <div v-if="displaySearching" class="flex flex-col items-center gap-2 mb-2 max-w-[420px]">
           <v-progress-circular class="mb-2" indeterminate />
           <span v-if="vehicles.length === 0">{{ t('vehicleDiscovery.searchingDescription') }}</span>
           <span v-else>{{ t('vehicleDiscovery.foundVehicles', { count: vehicles.length }) }}</span>
+          <div v-if="progressStatus" class="text-xs opacity-75 text-center">
+            <div>{{ progressStatus.headline }}</div>
+            <div v-if="progressStatus.detail" class="opacity-75">{{ progressStatus.detail }}</div>
+          </div>
         </div>
 
         <div v-if="vehicles.length > 0" class="flex flex-col gap-2 mb-3">
-          <div v-if="!searching" class="h-4 font-weight-bold text-center mb-5">
+          <div v-if="!displaySearching" class="h-4 font-weight-bold text-center mb-5">
             {{ t('vehicleDiscovery.vehiclesFound') }}
           </div>
           <div v-for="vehicle in vehicles" :key="vehicle.address" class="flex items-center gap-2">
@@ -29,16 +33,16 @@
           </div>
         </div>
 
-        <div v-else-if="searched && !searching" class="text-sm">{{ t('vehicleDiscovery.noVehiclesFound') }}</div>
+        <div v-else-if="searched && !displaySearching" class="text-sm">{{ t('vehicleDiscovery.noVehiclesFound') }}</div>
 
-        <div v-if="!searching && !searched" class="flex flex-col gap-2 items-center justify-center text-center">
+        <div v-if="!displaySearching && !searched" class="flex flex-col gap-2 items-center justify-center text-center">
           <p v-if="props.showAutoSearchOption" class="font-bold">{{ t('vehicleDiscovery.notConnected') }}</p>
           <p class="max-w-[25rem] mb-2">
             {{ t('vehicleDiscovery.description') }}
           </p>
         </div>
 
-        <div v-if="!searching" class="flex justify-center items-center">
+        <div v-if="!displaySearching" class="flex justify-center items-center">
           <v-btn variant="outlined" :disabled="searching" class="mb-5" @click="searchVehicles">
             {{ searched ? t('vehicleDiscovery.searchAgain') : t('vehicleDiscovery.searchForVehicles') }}
           </v-btn>
@@ -54,19 +58,41 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSnackbar } from '@/composables/snackbar'
-import vehicleDiscover, { NetworkVehicle } from '@/libs/electron/vehicle-discovery'
+import vehicleDiscover, { DiscoveryProgress, NetworkVehicle } from '@/libs/electron/vehicle-discovery'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import InteractionDialog, { Action } from './InteractionDialog.vue'
 
+const tierLabels: Record<number, string> = {
+  0: 'wired Ethernet',
+  1: 'Wi-Fi',
+  2: 'local network',
+  3: 'VPN / overlay network',
+}
+
+/**
+ * Two-line scan-progress status rendered under the dialog spinner.
+ */
+interface ProgressStatusLine {
+  /**
+   * Main status line summarising which tier and interfaces are being scanned.
+   */
+  headline: string
+  /**
+   * Optional secondary line with pass and address-count detail.
+   */
+  detail?: string
+}
+
 const props = defineProps<{
   /**
-   *
+   * `v-model` binding controlling whether the discovery dialog is currently open.
    */
   modelValue: boolean
   /**
-   *
+   * When true, the dialog also exposes the "Don't show again" action used by the
+   * auto-open flow (e.g. on startup when no vehicle is connected).
    */
   showAutoSearchOption?: boolean
 }>()
@@ -84,14 +110,36 @@ const isOpen = ref(props.modelValue)
 const searching = ref(false)
 const searched = ref(false)
 const vehicles = ref<NetworkVehicle[]>([])
+const progress = ref<DiscoveryProgress | null>(null)
+const searchController = ref<AbortController | null>(null)
 const preventAutoSearch = useStorage('cockpit-prevent-auto-vehicle-discovery-dialog', false)
-
 const actionsDisabled = ref(false)
-const dialogActions = computed<Action[]>(() => {
+
+// Stop-button latency is dominated by HTTP probes already in flight (~3s each
+// × 100 workers on a tier-3 sweep), so we treat "user stopped" as a separate
+// UI state that flips the dialog to its post-search look immediately while
+// the underlying scan tidies up in the background.
+const userStopped = ref(false)
+const displaySearching = computed(() => searching.value && !userStopped.value)
+
+const progressStatus = computed<ProgressStatusLine | null>(() => {
+  if (!progress.value) return null
+  const { tier, interfaces, passIndex, totalPasses, passTimeoutMs, addressesInPass } = progress.value
+  const tierLabel = tierLabels[tier] ?? `tier ${tier}`
+  const ifaceList = interfaces.join(', ') || 'no interfaces'
+  const headline = `Scanning ${tierLabel} (${ifaceList})`
+  const passInfo =
+    totalPasses > 1 ? `Pass ${passIndex}/${totalPasses} at ${passTimeoutMs}ms` : `Probe timeout ${passTimeoutMs}ms`
+  const detail = `${passInfo} — ${addressesInPass.toLocaleString()} address(es)`
+  return { headline, detail }
+})
+
+const originalActions = computed<Action[]>(() => {
   const actions: Action[] = [
     {
       text: t('common.close'),
       action: () => {
+        logUserAction('Closed Vehicle Discovery dialog')
         isOpen.value = false
       },
     },
@@ -107,6 +155,12 @@ const dialogActions = computed<Action[]>(() => {
   return actions.map((action) => ({ ...action, disabled: actionsDisabled.value }))
 })
 
+const dialogActions = ref<Action[]>(originalActions.value)
+
+const resetDialogActions = (): void => {
+  dialogActions.value = originalActions.value
+}
+
 watch(
   () => props.modelValue,
   (value) => {
@@ -119,19 +173,51 @@ watch(isOpen, (value) => {
 })
 
 const searchVehicles = async (): Promise<void> => {
+  logUserAction('Started vehicle discovery scan')
   searching.value = true
   searched.value = false
+  userStopped.value = false
   vehicles.value = []
-  disableButtons()
-  await discoveryService.findVehicles((vehicle) => {
-    vehicles.value = [...vehicles.value, vehicle]
-  })
-  searching.value = false
+  progress.value = null
+  searchController.value = new AbortController()
+  showStopAction()
+  try {
+    await discoveryService.findVehicles(
+      (vehicle) => {
+        vehicles.value = [...vehicles.value, vehicle]
+      },
+      (update) => {
+        progress.value = update
+      },
+      searchController.value.signal
+    )
+  } catch (error) {
+    if (!userStopped.value) {
+      console.error(`[VehicleDiscoveryDialog] Vehicle discovery failed: ${error}`)
+      openSnackbar({ message: `Vehicle discovery failed: ${error}`, variant: 'error', duration: 5000 })
+    }
+  } finally {
+    searching.value = false
+    progress.value = null
+    searchController.value = null
+    userStopped.value = false
+    enableButtons()
+    searched.value = true
+  }
+}
+
+const stopSearch = (): void => {
+  if (!searchController.value) return
+  logUserAction('Stopped vehicle discovery scan')
+  userStopped.value = true
+  searchController.value.abort()
+  progress.value = null
   enableButtons()
   searched.value = true
 }
 
 const selectVehicle = async (address: string): Promise<void> => {
+  logUserAction(`Selected discovered vehicle at ${address}`)
   mainVehicleStore.globalAddress = address
   isOpen.value = false
   await reloadCockpitAndWarnUser()
@@ -139,6 +225,7 @@ const selectVehicle = async (address: string): Promise<void> => {
 }
 
 const preventFutureAutoSearchs = (): void => {
+  logUserAction('Disabled automatic vehicle discovery on startup')
   preventAutoSearch.value = true
   disableButtons()
   setTimeout(() => {
@@ -148,19 +235,29 @@ const preventFutureAutoSearchs = (): void => {
 
 const disableButtons = (): void => {
   actionsDisabled.value = true
+  resetDialogActions()
 }
 
 const enableButtons = (): void => {
   actionsDisabled.value = false
+  resetDialogActions()
+}
+
+const showStopAction = (): void => {
+  dialogActions.value = [{ text: 'Stop', action: stopSearch }]
 }
 
 watch(isOpen, (isNowOpen) => {
   if (isNowOpen) return
 
+  searchController.value?.abort()
+
   setTimeout(() => {
     vehicles.value = []
     searching.value = false
     searched.value = false
+    progress.value = null
+    userStopped.value = false
   }, 1000)
 })
 </script>

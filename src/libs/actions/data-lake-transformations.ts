@@ -1,5 +1,6 @@
 import { settingsManager } from '../settings-management'
 import {
+  findDataLakeInputsInString,
   findDataLakeVariablesIdsInString,
   getDataLakeVariableIdFromInput,
   replaceDataLakeInputsInString,
@@ -17,26 +18,79 @@ const transformingFunctionsKey = 'cockpit-transforming-functions'
 
 let globalTransformingFunctions: TransformingFunction[] = []
 
+// Stored entries the runtime cannot use, held aside so a later save can round-trip them untouched.
+let unusableTransformingFunctions: TransformingFunction[] = []
+
+// Everything that walks the function list assumes both fields are strings, so a stored entry missing
+// either one throws somewhere far from here (`getDataLakeVariableIdFromInput` on load, the POI
+// coordinate sync while pruning), and such an entry can back no variable anyway.
+const isUsableTransformingFunction = (func: TransformingFunction): boolean =>
+  typeof func?.id === 'string' && func.id.trim() !== '' && typeof func.expression === 'string'
+
+// The id is trimmed rather than taken as given because surrounding whitespace survives every check
+// here but makes the entry unreferenceable: `getDataLakeVariableIdFromInput` trims what an
+// expression's `{{ }}` captures, so `{{ my id }}` would never find an id stored as ' my id '.
+const withTrimmedId = (func: TransformingFunction): TransformingFunction =>
+  typeof func?.id === 'string' ? { ...func, id: func.id.trim() } : func
+
+const usableTransformingFunctionOrThrow = (func: TransformingFunction): TransformingFunction => {
+  const trimmedFunc = withTrimmedId(func)
+  if (isUsableTransformingFunction(trimmedFunc)) return trimmedFunc
+  const got = `Got id '${func?.id}' and expression '${func?.expression}'.`
+  throw new Error(`A transforming function needs a non-empty id and a string expression. ${got}`)
+}
+
 const loadTransformingFunctions = (): void => {
   const transformingFunctions = settingsManager.getKeyValue(transformingFunctionsKey)
   if (transformingFunctions === undefined) {
     globalTransformingFunctions = []
     return
   }
-  globalTransformingFunctions = transformingFunctions as TransformingFunction[]
+  // Reading a non-list as empty keeps the failure to the transforming functions: this runs at import
+  // time, so throwing here takes down the whole app rather than the features that use them.
+  if (!Array.isArray(transformingFunctions)) {
+    console.warn(`Stored '${transformingFunctionsKey}' is not a list. Reading it as empty.`)
+    globalTransformingFunctions = []
+    return
+  }
+  const storedFunctions = transformingFunctions as TransformingFunction[]
+  // Stored ids are normalised on the way in too, so an entry a previous version wrote as ' my id ' still
+  // matches the trimmed id an update carries, instead of silently saving nothing.
+  globalTransformingFunctions = storedFunctions.filter((func) => isUsableTransformingFunction(func)).map(withTrimmedId)
+  unusableTransformingFunctions = storedFunctions.filter((func) => !isUsableTransformingFunction(func))
+  const droppedCount = unusableTransformingFunctions.length
+  if (droppedCount > 0) {
+    console.warn(`Ignoring ${droppedCount} stored transforming function(s) with no id or expression.`)
+  }
   updateTransformingFunctionListeners()
 }
 
 const saveTransformingFunctions = (): void => {
-  settingsManager.setKeyValue(transformingFunctionsKey, globalTransformingFunctions)
+  // The unusable entries go back untouched. This key is vehicle-synced, so persisting only the filtered
+  // list would delete them for every operator of that vehicle, automatically and with no undo.
+  const functionsToStore = [...globalTransformingFunctions, ...unusableTransformingFunctions]
+  settingsManager.setKeyValue(transformingFunctionsKey, functionsToStore)
   updateTransformingFunctionListeners()
 }
 
-const getExpressionValue = (func: TransformingFunction): string | number | boolean => {
-  const expressionWithValues = replaceDataLakeInputsInString(func.expression)
+/**
+ * Evaluates a data-lake expression, replacing `{{ variable }}` inputs with their current values and
+ * running the result as a JavaScript expression (so arithmetic like "{{ x }} * 10" works).
+ * @param {string} expression - The expression to evaluate
+ * @returns {string | number | boolean} The evaluated value
+ */
+export const evaluateDataLakeExpression = (expression: string): string | number | boolean => {
+  const expressionWithValues = replaceDataLakeInputsInString(expression)
+
+  // Inputs whose variables have no value yet are left as literal '{{ ... }}' placeholders by the replacement.
+  // Bail out with a clear error instead of letting eval fail with a cryptic "Unexpected token '{'" SyntaxError.
+  const unavailableInputs = findDataLakeInputsInString(expressionWithValues)
+  if (unavailableInputs.length > 0) {
+    throw new Error(`Data lake variable(s) not available yet: ${unavailableInputs.join(', ')}.`)
+  }
 
   // If the expression contains a return statement, we can just evaluate it directly
-  if (func.expression.includes('return')) {
+  if (expression.includes('return')) {
     return eval(`(function() { ${expressionWithValues} })()`)
   }
 
@@ -68,11 +122,18 @@ const getExpressionValue = (func: TransformingFunction): string | number | boole
   throw new Error('Function has no return statement and has comments on all lines.')
 }
 
+const getExpressionValue = (func: TransformingFunction): string | number | boolean => {
+  return evaluateDataLakeExpression(func.expression)
+}
+
 const variablesListeners: Record<string, Record<string, string[]>> = {}
 
 const nextDelayToEvaluateFaillingTransformingFunction: Record<string, number> = {}
 const lastTimeTriedToEvaluateFaillingTransformingFunction: Record<string, number> = {}
 const initialEvaluationTimeouts: Record<string, ReturnType<typeof setTimeout>> = {}
+// Last error logged per function, so a function that keeps failing the same way (e.g. depends on a vehicle
+// parameter that never arrives) is logged once instead of on every dependency update.
+const lastLoggedErrorForTransformingFunction: Record<string, string> = {}
 
 const setupTransformingFunctionsListeners = (): void => {
   globalTransformingFunctions.forEach((func) => {
@@ -108,14 +169,20 @@ const setupTransformingFunctionsListeners = (): void => {
               return
             } else {
               setDataLakeVariableData(func.id, getExpressionValue(func))
+              delete lastLoggedErrorForTransformingFunction[func.id]
             }
           } catch (error) {
             lastTimeTriedToEvaluateFaillingTransformingFunction[func.id] = Date.now()
             const currentDelay = nextDelayToEvaluateFaillingTransformingFunction[func.id] || 10
             const nextDelay = Math.min(2 * currentDelay, 10000)
             nextDelayToEvaluateFaillingTransformingFunction[func.id] = nextDelay
-            const msg = `Error evaluating expression for transforming function '${func.id}'. Next evaluation in ${nextDelay} ms. Error: ${error}`
-            console.error(msg)
+            // Avoid spamming the log when the same error repeats on every dependency update.
+            const errorText = `${error}`
+            if (lastLoggedErrorForTransformingFunction[func.id] !== errorText) {
+              lastLoggedErrorForTransformingFunction[func.id] = errorText
+              const msg = `Error evaluating expression for transforming function '${func.id}'. Next evaluation in ${nextDelay} ms. Error: ${errorText}`
+              console.error(msg)
+            }
           }
         })
         if (!variablesListeners[func.id]) {
@@ -131,6 +198,13 @@ const setupTransformingFunctionsListeners = (): void => {
 }
 
 const deleteAllTransformingFunctionsListeners = (): void => {
+  // Cancel any pending initial evaluations. Without this, a rebuild leaves stale timeouts that hold
+  // an outdated function reference and later write an old value back (e.g. reverting one coordinate
+  // of a just-dragged POI, since updating a function replaces its object and triggers a rebuild).
+  Object.keys(initialEvaluationTimeouts).forEach((funcId) => {
+    clearTimeout(initialEvaluationTimeouts[funcId])
+    delete initialEvaluationTimeouts[funcId]
+  })
   Object.keys(nextDelayToEvaluateFaillingTransformingFunction).forEach((funcId) => {
     delete nextDelayToEvaluateFaillingTransformingFunction[funcId]
     delete lastTimeTriedToEvaluateFaillingTransformingFunction[funcId]
@@ -195,6 +269,7 @@ export interface TransformingFunction {
  * @param {'string' | 'number' | 'boolean'} type - Type of the new variable
  * @param {string} expression - Expression to calculate the variable's value
  * @param {string?} description - Description of the new variable
+ * @throws {Error} If the id is empty or the expression is not a string
  */
 export const createTransformingFunction = (
   id: string,
@@ -203,9 +278,9 @@ export const createTransformingFunction = (
   expression: string,
   description?: string
 ): void => {
-  const transformingFunction: TransformingFunction = { name, id, type, expression, description }
+  const transformingFunction = usableTransformingFunctionOrThrow({ name, id, type, expression, description })
   globalTransformingFunctions.push(transformingFunction)
-  createDataLakeVariable({ id, name, type, description })
+  createDataLakeVariable({ id: transformingFunction.id, name, type, description })
   saveTransformingFunctions()
 }
 
@@ -220,13 +295,17 @@ export const getAllTransformingFunctions = (): TransformingFunction[] => {
 /**
  * Updates a transforming function
  * @param {TransformingFunction} func - The function to update
+ * @throws {Error} If the id is empty, the expression is not a string, or no stored function has that id
  */
 export const updateTransformingFunction = (func: TransformingFunction): void => {
-  const index = globalTransformingFunctions.findIndex((f) => f.id === func.id)
-  if (index !== -1) {
-    globalTransformingFunctions[index] = func
-    saveTransformingFunctions()
+  const transformingFunction = usableTransformingFunctionOrThrow(func)
+  const index = globalTransformingFunctions.findIndex((f) => f.id === transformingFunction.id)
+  // Returning quietly here would discard the caller's update while looking like it worked.
+  if (index === -1) {
+    throw new Error(`There is no transforming function with id '${transformingFunction.id}' to update.`)
   }
+  globalTransformingFunctions[index] = transformingFunction
+  saveTransformingFunctions()
 }
 
 /**

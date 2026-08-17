@@ -8,52 +8,58 @@
       >
         <div class="grid grid-cols-3 gap-x-4 mb-4">
           <v-switch
-            v-model="missionStore.showChecklistBeforeArm"
+            :model-value="missionStore.showChecklistBeforeArm"
             label="Enable pre-arm checklist"
             color="white"
             hide-details
             base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
+            @update:model-value="setShowChecklistBeforeArm"
           />
           <v-switch
-            v-model="missionStore.slideEventsEnabled"
+            :model-value="missionStore.slideEventsEnabled"
             label="Enable slide to confirm"
             color="white"
             hide-details
             base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
+            @update:model-value="setSlideEventsEnabled"
           />
           <v-switch
-            v-model="missionStore.alwaysSwitchToFlightMode"
+            :model-value="missionStore.alwaysSwitchToFlightMode"
             label="Auto switch to flight mode on mission upload"
             color="white"
             hide-details
             base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
+            @update:model-value="setAlwaysSwitchToFlightMode"
           />
           <v-switch
-            v-model="missionStore.showMissionCreationTips"
+            :model-value="missionStore.showMissionCreationTips"
             label="Show mission creation checklist"
             color="white"
             hide-details
             base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
+            @update:model-value="setShowMissionCreationTips"
           />
           <v-switch
-            v-model="missionStore.showGridOnMissionPlanning"
+            :model-value="missionStore.showGridOnMissionPlanning"
             label="Show coordinate grid on maps"
             color="white"
             hide-details
             base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
+            @update:model-value="setShowGridOnMissionPlanning"
           />
           <v-switch
-            v-model="missionStore.showMissionEstimates"
+            :model-value="missionStore.showMissionEstimates"
             label="Show mission estimates panel"
             color="white"
             hide-details
             base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
+            @update:model-value="setShowMissionEstimates"
           />
         </div>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
@@ -85,7 +91,13 @@
           <template #info>
             <strong>Default map position:</strong> Defines the initial center and zoom level for the map. <br />
             <strong>Max. vehicle position update rate:</strong> Limits how often the vehicle's position is updated on
-            the map to reduce CPU usage.
+            the map to reduce CPU usage. <br />
+            <strong>Map tile provider:</strong> Sets which tile layer is used when the dashboard map and mission
+            planning view open. Choose <em>Use last selected</em> to keep the provider last picked from the map's layer
+            control, or pick a specific provider to always open with it.
+            <strong>Unavailable-tile background:</strong> When satellite imagery is missing (e.g. offshore at high
+            zoom), tiles are replaced with a procedural noise pattern sampled by lat/lon so vehicle motion remains
+            trackable. Customize the base color, texture intensity, and noise seed below.
           </template>
           <template #content>
             <div class="flex flex-wrap gap-4 px-4 pb-4">
@@ -122,17 +134,83 @@
                 <div class="flex-grow-1" />
                 <v-btn class="mt-7 bg-[#FFFFFF22]" variant="plain" size="small" @click="saveMapPosition">Save</v-btn>
               </div>
-              <div class="flex w-[63%] justify-between items-center mt-4">
-                <p class="w-full text-md">Max. vehicle position update rate</p>
-                <div class="flex flex-col max-w-[118px]">
-                  <input
-                    v-model.number="vehicleStore.vehiclePositionMaxSampleRate"
-                    type="number"
-                    min="0"
-                    class="px-2 py-1 rounded-sm bg-[#FFFFFF22]"
+              <v-divider class="mb-4 mt-1 opacity-5" />
+              <div class="flex w-full items-center -mt-4 gap-4">
+                <div class="flex w-1/2 items-center justify-start pr-2">
+                  <p class="text-md">Max. vehicle position update rate</p>
+                  <div class="flex items-center">
+                    <input
+                      v-model.number="vehicleStore.vehiclePositionMaxSampleRate"
+                      type="number"
+                      min="0"
+                      class="px-2 py-1 w-[80px] rounded-sm bg-[#FFFFFF22] ml-4"
+                    />
+                    <p class="ml-2">ms</p>
+                  </div>
+                </div>
+                <div class="flex w-1/2 items-center justify-between pl-2">
+                  <p class="text-md mr-4">Default map tile provider</p>
+                  <v-select
+                    :model-value="missionStore.defaultMapTileProvider"
+                    :items="mapTileProviderOptions"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="w-[180px]"
+                    theme="dark"
+                    @update:model-value="setDefaultMapTileProvider"
                   />
                 </div>
-                <p class="ml-2">ms</p>
+              </div>
+              <v-divider class="my-1 opacity-5" />
+              <div class="flex flex-col w-full">
+                <p class="w-full text-md mb-2">Unavailable-tile background</p>
+                <div class="flex w-4/5 items-center justify-between gap-x-6">
+                  <div class="flex items-center gap-x-2">
+                    <p class="text-sm text-slate-200">Base color</p>
+                    <!-- `.lazy` so tiles regenerate only when the picker is dismissed. -->
+                    <input
+                      v-model.lazy="missionStore.mapFallbackBaseColor"
+                      type="color"
+                      class="w-10 h-8 rounded-sm bg-transparent border border-[#FFFFFF33] cursor-pointer"
+                    />
+                    <input
+                      v-model.lazy="missionStore.mapFallbackBaseColor"
+                      type="text"
+                      maxlength="7"
+                      class="px-2 py-1 w-24 rounded-sm bg-[#FFFFFF22] text-white text-sm"
+                    />
+                  </div>
+                  <div class="flex items-center flex-1 min-w-[260px] max-w-[360px]">
+                    <p class="text-sm text-slate-200 mr-4 whitespace-nowrap">Noise intensity</p>
+                    <input
+                      :value="intensityToSliderPercent(pendingNoiseIntensity ?? missionStore.mapFallbackNoiseIntensity)"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      class="flex-1 accent-white"
+                      @input="onNoiseIntensityInput"
+                      @change="onNoiseIntensityChange"
+                    />
+                    <p class="text-xs text-slate-200 w-10 text-right">
+                      {{ intensityToSliderPercent(pendingNoiseIntensity ?? missionStore.mapFallbackNoiseIntensity) }}%
+                    </p>
+                  </div>
+                  <v-tooltip location="top" text="Regenerate noise pattern">
+                    <template #activator="{ props: tooltipProps }">
+                      <v-btn
+                        v-bind="tooltipProps"
+                        icon="mdi-refresh"
+                        size="small"
+                        variant="text"
+                        color="white"
+                        class="opacity-80 hover:opacity-100"
+                        @click="reseedMapFallback"
+                      />
+                    </template>
+                  </v-tooltip>
+                </div>
               </div>
             </div>
           </template>
@@ -141,20 +219,21 @@
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Vehicle options</template>
           <template #info>
-            <strong>Max. displayed path points:</strong> Once the limit is reached, the last third of the mission trail
-            will be simplified. Keep this value reasonable — larger histories use more memory and may affect performance
-            over long missions, especially when using high frequency positioning data (e.g. from a DVL or RTK setup).
+            <strong>Max. path points:</strong> Once the limit is reached, the last third of the mission trail will be
+            simplified. Keep this value reasonable — larger histories use more memory and may affect performance over
+            long missions, specially when using DVL or RTK positioning data.
           </template>
           <template #content>
             <div class="flex flex-col gap-y-3 px-4 pb-4 pt-2">
               <div class="flex items-center gap-x-16">
                 <v-switch
-                  v-model="missionStore.isVehiclePositionHistoryPersistent"
+                  :model-value="missionStore.isVehiclePositionHistoryPersistent"
                   label="Make vehicle history line persistent"
                   color="white"
                   hide-details
                   base-color="#FFFFFF33"
                   class="-my-1"
+                  @update:model-value="setVehicleHistoryPersistent"
                 />
                 <div class="flex items-center gap-x-2 ml-4">
                   <span class="text-white text-sm whitespace-nowrap">Max. path points</span>
@@ -192,7 +271,7 @@ import { EventCategory } from '@/libs/slide-to-confirm'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { DEFAULT_MAX_POSITION_HISTORY_SIZE, MIN_MAX_POSITION_HISTORY_SIZE, useMissionStore } from '@/stores/mission'
-import type { WaypointCoordinates } from '@/types/mission'
+import type { MapTileProviderPreference, WaypointCoordinates } from '@/types/mission'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
@@ -200,9 +279,32 @@ const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
 
+const mapTileProviderOptions: MapTileProviderPreference[] = ['Use last selected', 'OpenStreetMap', 'Esri World Imagery']
+
 // Create local reactive copies of the map settings
 const defaultMapCenter = ref<WaypointCoordinates>([...missionStore.defaultMapCenter])
 const defaultMapZoom = ref(missionStore.defaultMapZoom)
+
+// Avoids redundant visual noise above this threshold.
+const MAX_USEFUL_NOISE_INTENSITY = 0.3
+
+const intensityToSliderPercent = (intensity: number): number =>
+  Math.round((intensity / MAX_USEFUL_NOISE_INTENSITY) * 100)
+
+const sliderPercentToIntensity = (sliderPercent: number): number => (sliderPercent / 100) * MAX_USEFUL_NOISE_INTENSITY
+
+// Drives the percentage label live during a drag; the store update waits for release.
+const pendingNoiseIntensity = ref<number | null>(null)
+
+const onNoiseIntensityInput = (event: Event): void => {
+  pendingNoiseIntensity.value = sliderPercentToIntensity(Number((event.target as HTMLInputElement).value))
+}
+
+const onNoiseIntensityChange = (event: Event): void => {
+  missionStore.mapFallbackNoiseIntensity = sliderPercentToIntensity(Number((event.target as HTMLInputElement).value))
+  logUserAction(`Set map fallback noise intensity to ${missionStore.mapFallbackNoiseIntensity}`)
+  pendingNoiseIntensity.value = null
+}
 
 // Watch for store changes and update local values
 watch(
@@ -219,7 +321,62 @@ watch(
   }
 )
 
+const setShowChecklistBeforeArm = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} pre-arm checklist`)
+  missionStore.showChecklistBeforeArm = enabled
+}
+
+const setSlideEventsEnabled = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} slide-to-confirm`)
+  missionStore.slideEventsEnabled = enabled
+}
+
+const setAlwaysSwitchToFlightMode = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} auto-switch to flight mode on mission upload`)
+  missionStore.alwaysSwitchToFlightMode = enabled
+}
+
+const setShowMissionCreationTips = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} mission creation checklist`)
+  missionStore.showMissionCreationTips = enabled
+}
+
+const setShowGridOnMissionPlanning = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} coordinate grid on maps`)
+  missionStore.showGridOnMissionPlanning = enabled
+}
+
+const setShowMissionEstimates = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} mission estimates panel`)
+  missionStore.showMissionEstimates = enabled
+}
+
+const setVehicleHistoryPersistent = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} persistent vehicle history line`)
+  missionStore.isVehiclePositionHistoryPersistent = enabled
+}
+
+const setDefaultMapTileProvider = (value: unknown): void => {
+  logUserAction(`Set default map tile provider to '${value}'`)
+  missionStore.defaultMapTileProvider = value as MapTileProviderPreference
+}
+
+const reseedMapFallback = (): void => {
+  logUserAction('Reseeded map fallback noise pattern')
+  missionStore.reseedMapFallback()
+}
+
 const saveMapPosition = (): void => {
+  logUserAction(
+    `Set default map position to ${defaultMapCenter.value[0]}, ${defaultMapCenter.value[1]} (zoom ${defaultMapZoom.value})`
+  )
   missionStore.setDefaultMapPosition(defaultMapCenter.value, defaultMapZoom.value)
 }
 
@@ -228,9 +385,11 @@ const clampMaxPositionHistorySize = (): void => {
   if (!Number.isFinite(value) || value < MIN_MAX_POSITION_HISTORY_SIZE) {
     missionStore.maxPositionHistorySize = MIN_MAX_POSITION_HISTORY_SIZE
   }
+  logUserAction(`Set max vehicle path points to ${missionStore.maxPositionHistorySize}`)
 }
 
 const resetMaxPositionHistorySize = (): void => {
+  logUserAction('Reset max path points to default')
   missionStore.maxPositionHistorySize = DEFAULT_MAX_POSITION_HISTORY_SIZE
 }
 </script>

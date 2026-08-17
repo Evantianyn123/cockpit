@@ -30,12 +30,7 @@
                 variant="uncontained"
                 :tooltip="simplifiedMainMenu ? t('navigation.editMode') : undefined"
                 :width="buttonSize"
-                @click="
-                  () => {
-                    widgetStore.editingMode = !widgetStore.editingMode
-                    handleCloseMainMenu()
-                  }
-                "
+                @click="toggleEditMode"
                 ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" :alt="t('navigation.editMode')" />
               </GlassButton>
               <GlassButton
@@ -48,12 +43,7 @@
                 :tooltip="simplifiedMainMenu ? t('navigation.flight') : undefined"
                 :width="buttonSize"
                 :selected="$route.name === 'Flight'"
-                @click="
-                  () => {
-                    $router.push('/')
-                    handleCloseMainMenu()
-                  }
-                "
+                @click="goToFlightView"
                 ><img v-if="!simplifiedMainMenu" :src="FlightIcon" :alt="t('navigation.flight')" />
               </GlassButton>
               <GlassButton
@@ -66,12 +56,7 @@
                 :tooltip="simplifiedMainMenu ? t('navigation.missionPlanning') : undefined"
                 :width="buttonSize"
                 :selected="$route.name === 'Mission planning'"
-                @click="
-                  () => {
-                    $router.push('/mission-planning')
-                    handleCloseMainMenu()
-                  }
-                "
+                @click="goToMissionPlanning"
                 ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" :alt="t('navigation.missionPlanning')" />
               </GlassButton>
               <GlassButton
@@ -128,12 +113,7 @@
                 :button-class="simplifiedMainMenu ? '-mb-2' : ''"
                 :width="buttonSize"
                 :selected="false"
-                @click="
-                  () => {
-                    toggleFullscreen()
-                    handleCloseMainMenu()
-                  }
-                "
+                @click="toggleFullscreenAndCloseMenu"
                 ><img
                   v-if="!simplifiedMainMenu"
                   :src="isFullscreen ? ExitFullScreenIcon : FullScreenIcon"
@@ -193,12 +173,7 @@
                 variant="round"
                 :width="buttonSize / 2.4"
                 :selected="false"
-                @click="
-                  () => {
-                    interfaceStore.mainMenuCurrentStep = 1
-                    currentSubMenuComponentRef = null
-                  }
-                "
+                @click="closeSubMenu"
               />
             </div>
           </div>
@@ -219,7 +194,7 @@
 import { onClickOutside, useDebounceFn, useFullscreen, useResizeObserver, useWindowSize } from '@vueuse/core'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import EditModeIcon from '@/assets/icons/edit-mode.svg'
 import ExitFullScreenIcon from '@/assets/icons/exit-full-screen.svg'
@@ -240,18 +215,23 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { SubMenuComponent } from '@/types/general'
 import ConfigurationActionsView from '@/views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from '@/views/ConfigurationAlertsView.vue'
+import ConfigurationCloudView from '@/views/ConfigurationCloudView.vue'
 import ConfigurationDevelopmentView from '@/views/ConfigurationDevelopmentView.vue'
 import ConfigurationGeneralView from '@/views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '@/views/ConfigurationJoystickView.vue'
 import ConfigurationTelemetryView from '@/views/ConfigurationLogsView.vue'
 import ConfigurationMAVLinkView from '@/views/ConfigurationMAVLinkView.vue'
 import ConfigurationMissionView from '@/views/ConfigurationMissionView.vue'
+import ConfigurationSourcesView from '@/views/ConfigurationSourcesView.vue'
 import ConfigurationUIView from '@/views/ConfigurationUIView.vue'
 import ConfigurationVideoView from '@/views/ConfigurationVideoView.vue'
 import ToolsDataLakeView from '@/views/ToolsDataLakeView.vue'
+import ToolsLogsView from '@/views/ToolsLogsView.vue'
+import ToolsMapView from '@/views/ToolsMapView.vue'
 import ToolsMAVLinkView from '@/views/ToolsMAVLinkView.vue'
 
 const route = useRoute()
+const router = useRouter()
 const interfaceStore = useAppInterfaceStore()
 const { t } = useI18n()
 const widgetStore = useWidgetManagerStore()
@@ -422,6 +402,12 @@ const configMenu = computed(() => {
       componentName: SubMenuComponentName.SettingsActions,
       component: markRaw(ConfigurationActionsView) as SubMenuComponent,
     },
+    {
+      icon: 'mdi-import',
+      title: 'Sources',
+      componentName: SubMenuComponentName.SettingsSources,
+      component: markRaw(ConfigurationSourcesView) as SubMenuComponent,
+    },
   ]
 
   if (interfaceStore.pirateMode) {
@@ -430,6 +416,12 @@ const configMenu = computed(() => {
       title: t('navigation.mavlink'),
       componentName: SubMenuComponentName.SettingsMAVLink,
       component: markRaw(ConfigurationMAVLinkView) as SubMenuComponent,
+    })
+    menusToShow.push({
+      icon: 'mdi-cloud-outline',
+      title: 'Cloud',
+      componentName: SubMenuComponentName.SettingsCloud,
+      component: markRaw(ConfigurationCloudView) as SubMenuComponent,
     })
   }
   return menusToShow
@@ -449,6 +441,18 @@ const toolsMenu = computed(() => {
       componentName: SubMenuComponentName.ToolsDataLake,
       component: markRaw(ToolsDataLakeView) as SubMenuComponent,
     },
+    {
+      icon: 'mdi-file-chart-outline',
+      title: 'Data Logs',
+      componentName: SubMenuComponentName.ToolsLogs,
+      component: markRaw(ToolsLogsView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-map-marker-radius',
+      title: 'Map',
+      componentName: SubMenuComponentName.ToolsMap,
+      component: markRaw(ToolsMapView) as SubMenuComponent,
+    },
   ]
 
   if (interfaceStore.pirateMode) {
@@ -459,21 +463,32 @@ const toolsMenu = computed(() => {
 })
 
 const selectSubMenu = (subMenuName: SubMenuName): void => {
+  logUserAction(`Opened '${subMenuName}' submenu`)
   interfaceStore.currentSubMenuName = subMenuName
   interfaceStore.mainMenuCurrentStep = 2
 }
 
+const closeSubMenu = (): void => {
+  logUserAction(`Closed '${interfaceStore.currentSubMenuName ?? ''}' submenu`)
+  interfaceStore.mainMenuCurrentStep = 1
+  currentSubMenuComponentRef.value = null
+}
+
 const toggleSubMenuComponent = (component: SubMenuComponent): void => {
+  const componentTitle = currentSubMenu.value.find((menuitem) => menuitem.component === component)?.title ?? 'unknown'
   if (currentSubMenuComponentRef.value === null) {
+    logUserAction(`Opened '${componentTitle}' panel`)
     currentSubMenuComponentRef.value = component
     interfaceStore.configModalVisibility = true
     return
   }
   if (currentSubMenuComponentRef.value === component) {
+    logUserAction(`Closed '${componentTitle}' panel`)
     currentSubMenuComponentRef.value = null
     interfaceStore.configModalVisibility = false
     return
   }
+  logUserAction(`Opened '${componentTitle}' panel`)
   currentSubMenuComponentRef.value = component
   interfaceStore.configModalVisibility = true
 }
@@ -562,8 +577,33 @@ const handleCloseMainMenu = (): void => {
 }
 
 const openAboutDialog = (): void => {
+  logUserAction('Opened About dialog')
   emit('closeMainMenu')
   emit('openAboutDialog')
+}
+
+const toggleEditMode = (): void => {
+  logUserAction(`${!widgetStore.editingMode ? 'Entered' : 'Exited'} interface edit mode`)
+  widgetStore.editingMode = !widgetStore.editingMode
+  handleCloseMainMenu()
+}
+
+const goToFlightView = (): void => {
+  logUserAction('Navigated to Flight view')
+  router.push('/')
+  handleCloseMainMenu()
+}
+
+const goToMissionPlanning = (): void => {
+  logUserAction('Navigated to Mission Planning view')
+  router.push('/mission-planning')
+  handleCloseMainMenu()
+}
+
+const toggleFullscreenAndCloseMenu = (): void => {
+  logUserAction(`${isFullscreen.value ? 'Exited' : 'Entered'} fullscreen`)
+  toggleFullscreen()
+  handleCloseMainMenu()
 }
 
 const debouncedToggleFullScreen = useDebounceFn(() => toggleFullscreen(), 10)

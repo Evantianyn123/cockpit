@@ -21,8 +21,9 @@ import type {
   PowerTcpDiagnosticStatus,
 } from '@/types/power-tcp-diagnostic'
 import { SDLStatus } from '@/types/sdl'
-import type { SerialData } from '@/types/serial'
+import type { SerialData, SerialPortInfo } from '@/types/serial'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
+import type { PiperVoiceStatus, TtsDownloadProgress, TtsDownloadResult } from '@/types/tts'
 import type { Go2RTCStreamInfo } from '@/types/video'
 
 import {
@@ -70,6 +71,13 @@ declare global {
    * @returns {void}
    */
   function unused<T>(variable: T): void
+
+  /**
+   * Log a user-initiated interaction to the system log with a standard prefix
+   * @param {string} message - Description of the action the user performed
+   * @returns {void}
+   */
+  function logUserAction(message: string): void
 
   /**
    * Expand Array interface for internal usage
@@ -228,6 +236,21 @@ declare global {
        */
       getInfoOnSubnets: () => Promise<NetworkInfo[]>
       /**
+       * Fast TCP port probe used as a pre-filter during vehicle discovery
+       * @param host IPv4 address to probe
+       * @param port TCP port to probe
+       * @param timeoutMs Time to wait before giving up, in milliseconds
+       * @returns Promise resolving to true if the port accepted the connection
+       */
+      checkTcpPortOpen: (host: string, port: number, timeoutMs: number) => Promise<boolean>
+      /**
+       * Tear down every still-open `checkTcpPortOpen` socket in the main
+       * process. Used to short-circuit the discovery pre-filter when the user
+       * presses "Stop" or closes the dialog mid-scan.
+       * @returns Promise resolving when the in-flight set has been cleared
+       */
+      abortTcpPortProbes: () => Promise<void>
+      /**
        * Get memory usage information from the main process
        * @returns Promise containing memory usage data
        */
@@ -356,6 +379,11 @@ declare global {
        */
       captureWorkspace(rect?: Electron.Rectangle): Promise<Uint8Array>
       /**
+       * List the serial ports available on the system
+       * @returns The list of available serial ports
+       */
+      serialListPorts: () => Promise<SerialPortInfo[]>
+      /**
        * Open a link connection
        */
       linkOpen: (path: string) => Promise<boolean>
@@ -377,6 +405,18 @@ declare global {
        * @param message - The message to log
        */
       systemLog: (level: string, message: string) => void
+      /**
+       * Send a batch of log messages to electron-log in a single IPC call
+       * @param events - The log events to send, each with a level and message
+       */
+      systemLogBatch: (
+        events: {
+          /** The log level (error, warn, info, debug, trace, log) */
+          level: string
+          /** The message to log */
+          message: string
+        }[]
+      ) => void
       /**
        * Get a list of all electron logs
        */
@@ -463,6 +503,44 @@ declare global {
        * @returns {Promise<TelemetrySystemHardwareInfo>} Serializable hardware fields
        */
       getHardwareTelemetryInfo: () => Promise<TelemetrySystemHardwareInfo>
+      /**
+       * Whether the bundled Piper synthesizer is available for offline alert speech
+       * @returns {Promise<boolean>} True when the runtime and the default voice are present
+       */
+      ttsAvailable: () => Promise<boolean>
+      /**
+       * Availability of each curated Piper voice on disk (bundled or downloaded)
+       * @returns {Promise<PiperVoiceStatus[]>} One status entry per curated voice
+       */
+      ttsListVoices: () => Promise<PiperVoiceStatus[]>
+      /**
+       * Synthesize speech for a text using a curated Piper voice
+       * @param {string} text - Text to speak
+       * @param {string} voiceKey - The Piper speaker key to synthesize with
+       * @returns {Promise<ArrayBuffer | null>} WAV audio bytes, or null when unavailable or synthesis failed
+       */
+      ttsSynthesize: (text: string, voiceKey: string) => Promise<ArrayBuffer | null>
+      /**
+       * Download the higher-quality model for every curated Piper voice
+       * @returns {Promise<TtsDownloadResult>} How the download ended
+       */
+      ttsDownloadVoices: () => Promise<TtsDownloadResult>
+      /**
+       * Abort the higher-quality voice download currently in progress, if any
+       * @returns {Promise<void>} Resolves once the abort was requested
+       */
+      ttsCancelDownload: () => Promise<void>
+      /**
+       * Delete every downloaded higher-quality Piper voice, reverting to the bundled model
+       * @returns {Promise<boolean>} True when the downloaded voices were removed
+       */
+      ttsDeleteVoices: () => Promise<boolean>
+      /**
+       * Subscribe to progress updates while the higher-quality voices download
+       * @param {(info: TtsDownloadProgress) => void} callback - Receives the voice counts and the current voice's progress
+       * @returns {void}
+       */
+      onTtsDownloadProgress: (callback: (info: TtsDownloadProgress) => void) => void
       /**
        * Applies the TCP endpoint used by the managed Modbus RTU-over-TCP session.
        * @param config - Persisted power-control connection configuration.
@@ -668,6 +746,12 @@ global!.unimplemented = function (message?: string) {
 global!.unused = function <T>(variable: T) { } // eslint-disable-line
 
 /* c8 ignore stop */
+
+// Standardized logging for user-initiated interactions. Centralizing the prefix here lets call sites just
+// describe the action (e.g. logUserAction('Opened joystick calibration dialog')) without importing anything.
+global!.logUserAction = function (message: string) {
+  console.info(`[UserAction] ${message}`)
+}
 
 // Extend types
 Array.prototype.first = function <T>(this: T[]): T | undefined {

@@ -23,7 +23,7 @@
               <div class="flex align-center w-full justify-between pr-2 mt-1 mb-3">
                 <div>
                   <span class="mr-2">Current user:</span>
-                  <span class="font-semibold text-2xl cursor-pointer" @click="missionStore.changeUsername">{{
+                  <span class="font-semibold text-2xl cursor-pointer" @click="manageUsers">{{
                     missionStore.username
                   }}</span>
                 </div>
@@ -34,7 +34,7 @@
                     append-icon="mdi-account"
                     class="bg-[#FFFFFF22] shadow-2 -mr-2"
                     variant="flat"
-                    @click="missionStore.changeUsername"
+                    @click="manageUsers"
                     >Manage users</v-btn
                   >
                 </div>
@@ -44,20 +44,10 @@
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openTutorial">
                   Show tutorial
                 </v-btn>
-                <v-btn
-                  size="x-small"
-                  class="bg-[#FFFFFF22] shadow-1"
-                  variant="flat"
-                  @click="showCockpitSettingsDialog = true"
-                >
+                <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openCockpitSettingsDialog">
                   Manage Cockpit settings
                 </v-btn>
-                <v-btn
-                  size="x-small"
-                  class="bg-[#FFFFFF22] shadow-1"
-                  variant="flat"
-                  @click="interfaceStore.pirateMode = !interfaceStore.pirateMode"
-                >
+                <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="togglePirateMode">
                   {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openExternalFeaturesModal">
@@ -68,7 +58,7 @@
                   class="bg-[#FFFFFF22] shadow-1"
                   variant="flat"
                   prepend-icon="mdi-shield-lock-outline"
-                  @click="interfaceStore.isDataPrivacyModalVisible = true"
+                  @click="openDataPrivacyModal"
                 >
                   Shared Data
                 </v-btn>
@@ -132,7 +122,7 @@
               size="x-small"
               class="bg-[#FFFFFF22] mt-3 mb-2 shadow-2"
               variant="flat"
-              @click="showDiscoveryDialog = true"
+              @click="openVehicleDiscoveryDialog"
             >
               Search for vehicles
             </v-btn>
@@ -364,7 +354,7 @@
             </div>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Generic WebSocket connections</template>
           <template #info>
             <div class="w-full">
@@ -426,6 +416,105 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Vehicle connection timeouts</template>
+          <template #info>
+            <p class="w-full">
+              Heartbeat timeout: Time without heartbeats before Cockpit considers the vehicle offline. Increase this
+              value when using high-latency or lossy links (e.g. cellular modems) where heartbeat packets may take
+              longer than the default 5 seconds to arrive. Unrelated to the autopilot's GCS (heartbeat) failsafe.
+            </p>
+            <br />
+            <p class="w-full">
+              Watchdog timeout: Time the MAVLink websocket may stay open without receiving any message before Cockpit
+              forcibly recycles it and reconnects. This is the recovery threshold, not the offline indicator: setting it
+              lower than the heartbeat timeout (above) means a brief link drop can be silently recovered before Cockpit
+              ever flips to "vehicle offline". On high-latency links where short stalls are normal, raise this value so
+              the socket is not torn down on every minor delivery delay.
+            </p>
+          </template>
+          <template #content>
+            <div
+              class="grid w-full mt-2 pb-2 gap-12"
+              :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'"
+            >
+              <div class="min-w-0">
+                <div class="mb-1 text-sm">Heartbeat timeout</div>
+                <v-form
+                  ref="connectionTimeoutForm"
+                  v-model="connectionTimeoutFormValid"
+                  class="w-full"
+                  @submit.prevent="setConnectionTimeout"
+                >
+                  <div class="flex items-start gap-2">
+                    <v-text-field
+                      v-model.number="newVehicleConnectionTimeoutSeconds"
+                      variant="filled"
+                      type="number"
+                      density="compact"
+                      theme="dark"
+                      class="flex-1"
+                      suffix="s"
+                      :rules="[isValidConnectionTimeout]"
+                    >
+                      <template #append-inner>
+                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetConnectionTimeout">
+                          mdi-restore
+                        </v-icon>
+                      </template>
+                    </v-text-field>
+                    <v-btn
+                      :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                      :disabled="!connectionTimeoutFormValid"
+                      class="bg-transparent mt-1"
+                      variant="text"
+                      type="submit"
+                    >
+                      Apply
+                    </v-btn>
+                  </div>
+                </v-form>
+              </div>
+              <div class="min-w-0">
+                <div class="mb-1 text-sm">Watchdog timeout</div>
+                <v-form
+                  ref="watchdogTimeoutForm"
+                  v-model="watchdogTimeoutFormValid"
+                  class="w-full"
+                  @submit.prevent="setWatchdogTimeout"
+                >
+                  <div class="flex items-start gap-2">
+                    <v-text-field
+                      v-model.number="newVehicleConnectionWatchdogTimeoutSeconds"
+                      variant="filled"
+                      type="number"
+                      density="compact"
+                      theme="dark"
+                      class="flex-1"
+                      suffix="s"
+                      :rules="[isValidWatchdogTimeout]"
+                    >
+                      <template #append-inner>
+                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetWatchdogTimeout">
+                          mdi-restore
+                        </v-icon>
+                      </template>
+                    </v-text-field>
+                    <v-btn
+                      :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                      :disabled="!watchdogTimeoutFormValid"
+                      class="bg-transparent mt-1"
+                      variant="text"
+                      type="submit"
+                    >
+                      Apply
+                    </v-btn>
+                  </div>
+                </v-form>
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
@@ -434,7 +523,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
@@ -489,6 +578,7 @@ const applyFolderPath = async (path: string): Promise<void> => {
 
 const browseCockpitFolder = async (): Promise<void> => {
   if (!window.electronAPI) return
+  logUserAction('Browsed for a custom Cockpit folder')
   const selected = await window.electronAPI.selectCockpitFolder()
   if (!selected) return
 
@@ -531,6 +621,7 @@ const browseCockpitFolder = async (): Promise<void> => {
 
 const resetCockpitFolderPath = async (): Promise<void> => {
   if (!window.electronAPI) return
+  logUserAction('Reset Cockpit folder path to default')
   await window.electronAPI.setCockpitFolderPath(defaultCockpitFolderPath.value)
   cockpitFolderPath.value = defaultCockpitFolderPath.value
 }
@@ -544,6 +635,7 @@ const setGlobalAddress = async (): Promise<void> => {
     return
   }
 
+  logUserAction(`Set vehicle global address to '${newGlobalAddress.value}'`)
   mainVehicleStore.globalAddress = newGlobalAddress.value
 
   // Temporary solution to actually set the address and connect the vehicle, since this is non-reactive today.
@@ -558,6 +650,9 @@ const resetGlobalAddress = async (): Promise<void> => {
 }
 
 const handleCustomRtcConfiguration = (): void => {
+  logUserAction(
+    `${mainVehicleStore.customWebRTCConfiguration.enabled ? 'Enabled' : 'Disabled'} custom WebRTC configuration`
+  )
   if (mainVehicleStore.customWebRTCConfiguration.enabled) {
     updateWebRtcConfiguration()
   }
@@ -580,7 +675,9 @@ const addNewVehicleConnection = async (conn: Connection.URI): Promise<void> => {
   vehicleConnected.value = undefined
   setTimeout(() => (vehicleConnected.value ??= false), 5000)
   try {
-    ConnectionManager.addConnection(new Connection.URI(conn), Protocol.Type.MAVLink)
+    ConnectionManager.addConnection(new Connection.URI(conn), Protocol.Type.MAVLink, {
+      websocket: { getWatchdogTimeoutMs: () => mainVehicleStore.vehicleConnectionWatchdogTimeoutMs },
+    })
   } catch (error) {
     console.error(error)
     alert(`Could not update main connection. ${error}.`)
@@ -607,6 +704,7 @@ const setMainVehicleConnectionURI = async (): Promise<void> => {
     return
   }
 
+  logUserAction(`Set custom main vehicle connection URI to '${mavlink2RestWebsocketURI.value.toString()}'`)
   mainVehicleStore.customMAVLink2RestWebsocketURI = {
     data: mavlink2RestWebsocketURI.value.toString(),
     enabled: true,
@@ -616,6 +714,7 @@ const setMainVehicleConnectionURI = async (): Promise<void> => {
 }
 
 const resetMainVehicleConnectionURI = async (): Promise<void> => {
+  logUserAction('Reset main vehicle connection URI to default')
   mainVehicleStore.customMAVLink2RestWebsocketURI = {
     enabled: false,
     data: mainVehicleStore.defaultMAVLink2RestWebsocketURI.toString(),
@@ -659,6 +758,7 @@ const setWebRTCSignallingURI = async (): Promise<void> => {
     return
   }
 
+  logUserAction(`Set custom WebRTC signalling URI to '${webRTCSignallingURI.value.toString()}'`)
   mainVehicleStore.customWebRTCSignallingURI = {
     data: webRTCSignallingURI.value.toString(),
     enabled: true,
@@ -668,10 +768,87 @@ const setWebRTCSignallingURI = async (): Promise<void> => {
 }
 
 const resetWebRTCSignallingURI = (): void => {
+  logUserAction('Reset WebRTC signalling URI to default')
   mainVehicleStore.customWebRTCSignallingURI = {
     enabled: false,
     data: mainVehicleStore.defaultWebRTCSignallingURI.toString(),
   }
+}
+
+/** Vehicle connection timeout */
+
+const defaultVehicleConnectionTimeoutSeconds = 5
+const minVehicleConnectionTimeoutSeconds = 1
+
+const connectionTimeoutForm = ref()
+const connectionTimeoutFormValid = ref(true)
+const vehicleConnectionTimeoutSeconds = computed(
+  () => Math.round(mainVehicleStore.vehicleConnectionTimeoutMs / 100) / 10
+)
+const newVehicleConnectionTimeoutSeconds = ref<number>(vehicleConnectionTimeoutSeconds.value)
+
+watch(vehicleConnectionTimeoutSeconds, (value) => (newVehicleConnectionTimeoutSeconds.value = value))
+
+const isValidConnectionTimeout = (value: number | string): boolean | string => {
+  const numericValue = typeof value === 'string' ? Number(value) : value
+  if (!Number.isFinite(numericValue)) return 'Timeout must be a valid number.'
+  if (numericValue < minVehicleConnectionTimeoutSeconds) {
+    return `Minimum timeout is ${minVehicleConnectionTimeoutSeconds} s.`
+  }
+  return true
+}
+
+const setConnectionTimeout = async (): Promise<void> => {
+  const validation = await connectionTimeoutForm.value.validate()
+  if (!validation.valid) return
+
+  logUserAction(`Set vehicle connection timeout to ${newVehicleConnectionTimeoutSeconds.value}s`)
+  mainVehicleStore.vehicleConnectionTimeoutMs = Math.round(newVehicleConnectionTimeoutSeconds.value * 1000)
+}
+
+const resetConnectionTimeout = (): void => {
+  logUserAction('Reset vehicle connection timeout to default')
+  newVehicleConnectionTimeoutSeconds.value = defaultVehicleConnectionTimeoutSeconds
+  mainVehicleStore.vehicleConnectionTimeoutMs = defaultVehicleConnectionTimeoutSeconds * 1000
+}
+
+/** Reconnection watchdog timeout */
+
+const defaultVehicleConnectionWatchdogTimeoutSeconds = 4
+const minVehicleConnectionWatchdogTimeoutSeconds = 1
+
+const watchdogTimeoutForm = ref()
+const watchdogTimeoutFormValid = ref(true)
+const vehicleConnectionWatchdogTimeoutSeconds = computed(
+  () => Math.round(mainVehicleStore.vehicleConnectionWatchdogTimeoutMs / 100) / 10
+)
+const newVehicleConnectionWatchdogTimeoutSeconds = ref<number>(vehicleConnectionWatchdogTimeoutSeconds.value)
+
+watch(vehicleConnectionWatchdogTimeoutSeconds, (value) => (newVehicleConnectionWatchdogTimeoutSeconds.value = value))
+
+const isValidWatchdogTimeout = (value: number | string): boolean | string => {
+  const numericValue = typeof value === 'string' ? Number(value) : value
+  if (!Number.isFinite(numericValue)) return 'Must be a valid number.'
+  if (numericValue < minVehicleConnectionWatchdogTimeoutSeconds) {
+    return `Minimum timeout is ${minVehicleConnectionWatchdogTimeoutSeconds} s.`
+  }
+  return true
+}
+
+const setWatchdogTimeout = async (): Promise<void> => {
+  const validation = await watchdogTimeoutForm.value.validate()
+  if (!validation.valid) return
+
+  logUserAction(`Set reconnection watchdog timeout to ${newVehicleConnectionWatchdogTimeoutSeconds.value}s`)
+  mainVehicleStore.vehicleConnectionWatchdogTimeoutMs = Math.round(
+    newVehicleConnectionWatchdogTimeoutSeconds.value * 1000
+  )
+}
+
+const resetWatchdogTimeout = (): void => {
+  logUserAction('Reset reconnection watchdog timeout to default')
+  newVehicleConnectionWatchdogTimeoutSeconds.value = defaultVehicleConnectionWatchdogTimeoutSeconds
+  mainVehicleStore.vehicleConnectionWatchdogTimeoutMs = defaultVehicleConnectionWatchdogTimeoutSeconds * 1000
 }
 
 const isValidHostAddress = (value: string): boolean | string => {
@@ -719,6 +896,7 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
 const customRtcConfiguration = ref<string>(JSON.stringify(mainVehicleStore.customWebRTCConfiguration.data, null, 4))
 const updateWebRtcConfiguration = (): void => {
   try {
+    logUserAction('Updated custom WebRTC configuration')
     const newConfig = JSON.parse(customRtcConfiguration.value)
     mainVehicleStore.customWebRTCConfiguration.data = newConfig
     reloadCockpitAndWarnUser()
@@ -741,11 +919,38 @@ const tryToPrettifyRtcConfig = (): void => {
 }
 
 const openTutorial = (): void => {
+  logUserAction('Opened Tutorial')
   interfaceStore.isMainMenuVisible = false
   interfaceStore.isTutorialVisible = true
 }
 
+const openDataPrivacyModal = (): void => {
+  logUserAction('Opened Data Privacy dialog')
+  interfaceStore.isDataPrivacyModalVisible = true
+}
+
+const manageUsers = (): void => {
+  logUserAction('Opened user management')
+  missionStore.changeUsername()
+}
+
+const openCockpitSettingsDialog = (): void => {
+  logUserAction('Opened Cockpit settings management dialog')
+  showCockpitSettingsDialog.value = true
+}
+
+const openVehicleDiscoveryDialog = (): void => {
+  logUserAction('Opened Vehicle Discovery dialog')
+  showDiscoveryDialog.value = true
+}
+
+const togglePirateMode = (): void => {
+  logUserAction(`${!interfaceStore.pirateMode ? 'Enabled' : 'Disabled'} pirate mode`)
+  interfaceStore.pirateMode = !interfaceStore.pirateMode
+}
+
 const openExternalFeaturesModal = (): void => {
+  logUserAction('Opened External Features dialog')
   interfaceStore.isMainMenuVisible = false
   interfaceStore.mainMenuCurrentStep = 1
   interfaceStore.currentSubMenuName = null
@@ -781,20 +986,23 @@ const addGenericWebSocket = (): void => {
   const url = newGenericWebSocketUrl.value.trim()
   if (!url) return
 
+  logUserAction(`Added generic WebSocket connection '${url}'`)
   addGenericWebSocketConnection(url)
   newGenericWebSocketUrl.value = ''
 }
 
 const removeGenericWebSocket = (url: string): void => {
+  logUserAction(`Removed generic WebSocket connection '${url}'`)
   removeGenericWebSocketConnection(url)
 }
 
 const openCockpitFolder = (): void => {
+  logUserAction('Opened Cockpit folder')
   if (isElectron() && window.electronAPI) {
     window.electronAPI?.openCockpitFolder()
   } else {
     openSnackbar({
-      message: 'This feature is only available in the desktop version of Cockpit.',
+      message: 'This feature is only available in Cockpit Standalone.',
       duration: 3000,
       variant: 'error',
       closeButton: true,

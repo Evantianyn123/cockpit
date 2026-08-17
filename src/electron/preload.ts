@@ -4,10 +4,14 @@ import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joysti
 import type { ModbusReadRequest, ModbusWriteRequest } from '@/types/power-modbus'
 import type { PowerControlConnectionConfig, PowerTcpDiagnosticEvent } from '@/types/power-tcp-diagnostic'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
+import type { TtsDownloadProgress } from '@/types/tts'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   appLanguageSet: (locale: string) => ipcRenderer.invoke('app-language-set', locale),
   getInfoOnSubnets: () => ipcRenderer.invoke('get-info-on-subnets'),
+  checkTcpPortOpen: (host: string, port: number, timeoutMs: number) =>
+    ipcRenderer.invoke('check-tcp-port-open', host, port, timeoutMs),
+  abortTcpPortProbes: () => ipcRenderer.invoke('abort-tcp-port-probes'),
   getResourceUsage: () => ipcRenderer.invoke('get-resource-usage'),
   onUpdateAvailable: (callback: (info: any) => void) =>
     ipcRenderer.on('update-available', (_event, info) => callback(info)),
@@ -90,6 +94,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('link-data', (_event, data) => callback(data))
   },
   systemLog: (level: string, message: string) => ipcRenderer.send('system-log', { level, message }),
+  systemLogBatch: (events: { level: string; message: string }[]) => ipcRenderer.send('system-log-batch', { events }),
   getElectronLogs: () => ipcRenderer.invoke('get-electron-logs'),
   getCurrentElectronLogInfo: () => ipcRenderer.invoke('get-current-electron-log-info'),
   getElectronLogContent: (logName: string) => ipcRenderer.invoke('get-electron-log-content', logName),
@@ -100,6 +105,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCurrentUserAgent: () => ipcRenderer.invoke('get-current-user-agent'),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   getHardwareTelemetryInfo: () => ipcRenderer.invoke('get-hardware-telemetry-info'),
+  ttsAvailable: () => ipcRenderer.invoke('tts-available'),
+  ttsListVoices: () => ipcRenderer.invoke('tts-list-voices'),
+  ttsSynthesize: async (text: string, voiceKey: string) => {
+    const audio: Uint8Array | null = await ipcRenderer.invoke('tts-synthesize', text, voiceKey)
+    return audio ? audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength) : null
+  },
+  ttsDownloadVoices: () => ipcRenderer.invoke('tts-download-voices'),
+  ttsCancelDownload: () => ipcRenderer.invoke('tts-cancel-download'),
+  ttsDeleteVoices: () => ipcRenderer.invoke('tts-delete-voices'),
+  onTtsDownloadProgress: (callback: (info: TtsDownloadProgress) => void) =>
+    ipcRenderer.on('tts-download-progress', (_event, info) => callback(info)),
   powerModbusConfigure: (config: PowerControlConnectionConfig) => ipcRenderer.invoke('power-modbus-configure', config),
   powerModbusConnect: () => ipcRenderer.invoke('power-modbus-connect'),
   powerModbusDisconnect: () => ipcRenderer.invoke('power-modbus-disconnect'),
