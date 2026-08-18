@@ -1,28 +1,27 @@
 <template>
   <BaseConfigurationView>
-    <template #title>General configuration</template>
+    <template #title>{{ t('generalConfiguration.title') }}</template>
     <template #content>
       <div
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>User settings</template>
+          <template #title>{{ t('generalConfiguration.userSettings') }}</template>
           <template #info>
             <p class="w-full">
-              User related configuration. Here you can set the user that is currently set for this device as well as
-              create a new user account.
+              {{ t('generalConfiguration.userSettingsDescription') }}
               <br />
               <br />
-              <span class="font-semibold">Pirate mode</span> allows Cockpit to expose advanced features, like setting
-              the frequency of MAVLink messages. Take care when enabling this mode.
+              <span class="font-semibold">{{ t('generalConfiguration.pirateMode') }}</span>
+              {{ t('generalConfiguration.pirateModeDescription') }}
             </p>
           </template>
           <template #content>
             <div class="flex flex-col w-full items-start">
               <div class="flex align-center w-full justify-between pr-2 mt-1 mb-3">
                 <div>
-                  <span class="mr-2">Current user:</span>
+                  <span class="mr-2">{{ t('generalConfiguration.currentUser') }}</span>
                   <span class="font-semibold text-2xl cursor-pointer" @click="manageUsers">{{
                     missionStore.username
                   }}</span>
@@ -35,23 +34,29 @@
                     class="bg-[#FFFFFF22] shadow-2 -mr-2"
                     variant="flat"
                     @click="manageUsers"
-                    >Manage users</v-btn
+                    >{{ t('generalConfiguration.manageUsers') }}</v-btn
                   >
                 </div>
               </div>
               <v-divider class="w-full opacity-[0.08]" />
               <div class="flex flex-row w-full items-center justify-between py-3 gap-x-2 gap-y-3 flex-wrap">
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openTutorial">
-                  Show tutorial
+                  {{ t('generalConfiguration.showTutorial') }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openCockpitSettingsDialog">
-                  Manage Cockpit settings
+                  {{ t('generalConfiguration.manageCockpitSettings') }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="togglePirateMode">
-                  {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
+                  {{
+                    t(
+                      interfaceStore.pirateMode
+                        ? 'generalConfiguration.disablePirateMode'
+                        : 'generalConfiguration.enablePirateMode'
+                    )
+                  }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openExternalFeaturesModal">
-                  Extension features
+                  {{ t('generalConfiguration.extensionFeatures') }}
                 </v-btn>
                 <v-btn
                   size="x-small"
@@ -60,12 +65,12 @@
                   prepend-icon="mdi-shield-lock-outline"
                   @click="openDataPrivacyModal"
                 >
-                  Shared Data
+                  {{ t('generalConfiguration.sharedData') }}
                 </v-btn>
               </div>
               <v-divider v-if="isElectron()" class="w-full opacity-[0.08]" />
               <div v-if="isElectron()" class="flex flex-col w-full py-4 gap-1">
-                <span class="text-md mb-1 text-slate-200">Cockpit folder location:</span>
+                <span class="text-md mb-1 text-slate-200">{{ t('generalConfiguration.folderLocation') }}</span>
                 <div class="flex items-center gap-6">
                   <v-tooltip
                     :text="cockpitFolderPath"
@@ -87,7 +92,7 @@
                         <template #append-inner>
                           <v-icon
                             v-if="cockpitFolderPath !== defaultCockpitFolderPath"
-                            v-tooltip.bottom="'Reset to default folder location'"
+                            v-tooltip.bottom="t('generalConfiguration.resetDefaultFolder')"
                             color="white"
                             @click.stop="resetCockpitFolderPath"
                           >
@@ -104,7 +109,7 @@
                     variant="flat"
                     @click="openCockpitFolder"
                   >
-                    Open folder
+                    {{ t('generalConfiguration.openFolder') }}
                   </v-btn>
                 </div>
               </div>
@@ -113,9 +118,11 @@
         </ExpansiblePanel>
 
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Vehicle network connection (global address)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
-          <template #info>Sets the network address for device communication. E.g: blueos.local</template>
+          <template #title>{{ t('generalConfiguration.vehicleNetworkConnection') }}</template>
+          <template #subtitle>{{
+            t('generalConfiguration.currentAddress', { address: mainVehicleStore.globalAddress })
+          }}</template>
+          <template #info>{{ t('generalConfiguration.vehicleNetworkDescription') }}</template>
           <template #content>
             <v-btn
               v-if="isElectron()"
@@ -124,7 +131,7 @@
               variant="flat"
               @click="openVehicleDiscoveryDialog"
             >
-              Search for vehicles
+              {{ t('generalConfiguration.searchForVehicles') }}
             </v-btn>
             <v-form
               ref="globalAddressForm"
@@ -147,14 +154,18 @@
                   variant="filled"
                   type="input"
                   density="compact"
-                  hint="Address of the Vehicle. E.g: blueos.local"
+                  :hint="t('generalConfiguration.addressHint')"
                   hide-details
                   class="w-[80%]"
                   :rules="[isValidHostAddress, isValidConnectionURI]"
                   @click:append-inner="resetGlobalAddress"
                 >
                   <template #append-inner>
-                    <v-icon v-tooltip.bottom="'Reset global address'" color="white" @click="resetGlobalAddress">
+                    <v-icon
+                      v-tooltip.bottom="t('generalConfiguration.resetGlobalAddress')"
+                      color="white"
+                      @click="resetGlobalAddress"
+                    >
                       mdi-restore
                     </v-icon>
                   </template>
@@ -167,19 +178,27 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ t('common.apply') }}
                 </v-btn>
               </div>
             </v-form>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>MAVLink2REST URI</template>
+          <template #title>{{ t('generalConfiguration.mavlink2RestUri') }}</template>
           <template #subtitle>
-            Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
-            Status:
             {{
-              vehicleConnected ? 'connected' : vehicleConnected === undefined ? 'connecting...' : 'failed to connect'
+              t('generalConfiguration.currentAddress', {
+                address: ConnectionManager.mainConnection()?.uri().toString() ?? t('generalConfiguration.none'),
+              })
+            }}<br />
+            {{ t('generalConfiguration.status') }}
+            {{
+              vehicleConnected
+                ? t('common.connected')
+                : vehicleConnected === undefined
+                ? t('common.connecting')
+                : t('generalConfiguration.connectionFailed')
             }}
           </template>
           <template #content>
@@ -201,12 +220,12 @@
                     variant="filled"
                     type="input"
                     density="compact"
-                    hint="URI of a Mavlink2Rest"
+                    :hint="t('generalConfiguration.mavlink2RestUriHint')"
                     :rules="[isValidSocketConnectionURI]"
                   >
                     <template #append-inner>
                       <v-icon
-                        v-tooltip.bottom="'Reset to default'"
+                        v-tooltip.bottom="t('generalConfiguration.resetDefault')"
                         color="white"
                         :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
                         @click="resetMainVehicleConnectionURI"
@@ -223,7 +242,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ t('common.apply') }}
                 </v-btn>
               </div>
               <div class="flex justify-end mt-6">
@@ -233,13 +252,17 @@
                 >
                   <v-switch
                     v-model="mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="t('generalConfiguration.enableCustom')"
                     class="-mt-5 bg-transparent mr-1 mb-[7px]"
                     density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{
+                      mainVehicleStore.customMAVLink2RestWebsocketURI.enabled
+                        ? t('common.enabled')
+                        : t('common.disabled')
+                    }}
                   </div>
                 </div>
               </div>
@@ -247,8 +270,12 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Video connection (WebRTC)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
+          <template #title>{{ t('generalConfiguration.videoConnection') }}</template>
+          <template #subtitle>{{
+            t('generalConfiguration.currentAddress', {
+              address: mainVehicleStore.webRTCSignallingURI?.toString() ?? '',
+            })
+          }}</template>
           <template #content>
             <v-form
               ref="webRTCSignallingForm"
@@ -267,12 +294,12 @@
                     variant="filled"
                     type="input"
                     density="compact"
-                    hint="URI of a WebRTC Signalling Server URI"
+                    :hint="t('generalConfiguration.webRtcUriHint')"
                     :rules="[isValidSocketConnectionURI]"
                   >
                     <template #append-inner>
                       <v-icon
-                        v-tooltip.bottom="'Reset to default'"
+                        v-tooltip.bottom="t('generalConfiguration.resetDefault')"
                         color="white"
                         :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
                         @click="resetWebRTCSignallingURI"
@@ -289,7 +316,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ t('common.apply') }}
                 </v-btn>
               </div>
               <div>
@@ -299,13 +326,15 @@
                 >
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCSignallingURI.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="t('generalConfiguration.enableCustom')"
                     class="-mt-5 bg-transparent mr-1 mb-[7px]"
                     density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCSignallingURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{
+                      mainVehicleStore.customWebRTCSignallingURI.enabled ? t('common.enabled') : t('common.disabled')
+                    }}
                   </div>
                 </div>
               </div>
@@ -313,7 +342,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Custom WebRTC configuration</template>
+          <template #title>{{ t('generalConfiguration.customWebRtcConfiguration') }}</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
               <v-textarea
@@ -321,7 +350,7 @@
                 v-model="customRtcConfiguration"
                 :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
                 variant="outlined"
-                label="Custom WebRTC Configuration"
+                :label="t('generalConfiguration.customWebRtcLabel')"
                 :rows="6"
                 hint="e.g.: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
                 class="w-full"
@@ -335,19 +364,21 @@
                   type="submit"
                   @click="handleCustomRtcConfiguration"
                 >
-                  Apply
+                  {{ t('common.apply') }}
                 </v-btn>
 
                 <div class="flex flex-col align-end text-[10px] -mt-8">
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCConfiguration.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="t('generalConfiguration.enableCustom')"
                     class="-mt-5 bg-transparent"
                     rounded="lg"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCConfiguration.enabled ? 'Enabled' : 'Disabled' }}
+                    {{
+                      mainVehicleStore.customWebRTCConfiguration.enabled ? t('common.enabled') : t('common.disabled')
+                    }}
                   </div>
                 </div>
               </div>
@@ -355,16 +386,16 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Generic WebSocket connections</template>
+          <template #title>{{ t('generalConfiguration.genericWebSocketConnections') }}</template>
           <template #info>
             <div class="w-full">
-              <p>Connect to external WebSocket servers to receive data and inject it into the data-lake.</p>
+              <p>{{ t('generalConfiguration.genericConnectionDescription') }}</p>
               <ul class="list-disc list-inside mt-2">
                 <li>
-                  Messages should be in the format <span class="font-mono">variableName=value</span>, one per message.
+                  {{ t('generalConfiguration.genericConnectionFormat') }}
                 </li>
                 <li>
-                  You can use data-lake variables to compose the URL, for example:
+                  {{ t('generalConfiguration.genericConnectionUrlExample') }}
                   <span class="font-mono">{{ exampleGenericWebSocketUrl }}</span>
                 </li>
               </ul>
@@ -384,12 +415,12 @@
                       {{ getLoadingStatusIcon(conn.status) }}
                     </v-icon>
                     <span class="truncate text-sm" :title="url">{{ replaceDataLakeInputsInString(url) }}</span>
-                    <span class="text-xs opacity-60">({{ conn.status }})</span>
+                    <span class="text-xs opacity-60">({{ t(`common.${conn.status}`) }})</span>
                   </div>
                   <v-btn icon="mdi-close" size="x-small" variant="text" @click="removeGenericWebSocket(url)" />
                 </div>
               </div>
-              <div v-else class="text-sm opacity-60 mb-4">No connections configured.</div>
+              <div v-else class="text-sm opacity-60 mb-4">{{ t('generalConfiguration.noConnectionsConfigured') }}</div>
 
               <!-- Add new connection -->
               <div class="flex justify-start items-center">
@@ -410,28 +441,18 @@
                   variant="text"
                   @click="addGenericWebSocket"
                 >
-                  Add connection
+                  {{ t('generalConfiguration.addConnection') }}
                 </v-btn>
               </div>
             </div>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Vehicle connection timeouts</template>
+          <template #title>{{ t('generalConfiguration.vehicleConnectionTimeouts') }}</template>
           <template #info>
-            <p class="w-full">
-              Heartbeat timeout: Time without heartbeats before Cockpit considers the vehicle offline. Increase this
-              value when using high-latency or lossy links (e.g. cellular modems) where heartbeat packets may take
-              longer than the default 5 seconds to arrive. Unrelated to the autopilot's GCS (heartbeat) failsafe.
-            </p>
+            <p class="w-full">{{ t('generalConfiguration.heartbeatTimeoutDescription') }}</p>
             <br />
-            <p class="w-full">
-              Watchdog timeout: Time the MAVLink websocket may stay open without receiving any message before Cockpit
-              forcibly recycles it and reconnects. This is the recovery threshold, not the offline indicator: setting it
-              lower than the heartbeat timeout (above) means a brief link drop can be silently recovered before Cockpit
-              ever flips to "vehicle offline". On high-latency links where short stalls are normal, raise this value so
-              the socket is not torn down on every minor delivery delay.
-            </p>
+            <p class="w-full">{{ t('generalConfiguration.watchdogTimeoutDescription') }}</p>
           </template>
           <template #content>
             <div
@@ -439,7 +460,7 @@
               :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'"
             >
               <div class="min-w-0">
-                <div class="mb-1 text-sm">Heartbeat timeout</div>
+                <div class="mb-1 text-sm">{{ t('generalConfiguration.heartbeatTimeout') }}</div>
                 <v-form
                   ref="connectionTimeoutForm"
                   v-model="connectionTimeoutFormValid"
@@ -458,7 +479,11 @@
                       :rules="[isValidConnectionTimeout]"
                     >
                       <template #append-inner>
-                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetConnectionTimeout">
+                        <v-icon
+                          v-tooltip.bottom="t('generalConfiguration.resetDefault')"
+                          color="white"
+                          @click="resetConnectionTimeout"
+                        >
                           mdi-restore
                         </v-icon>
                       </template>
@@ -470,13 +495,13 @@
                       variant="text"
                       type="submit"
                     >
-                      Apply
+                      {{ t('common.apply') }}
                     </v-btn>
                   </div>
                 </v-form>
               </div>
               <div class="min-w-0">
-                <div class="mb-1 text-sm">Watchdog timeout</div>
+                <div class="mb-1 text-sm">{{ t('generalConfiguration.watchdogTimeout') }}</div>
                 <v-form
                   ref="watchdogTimeoutForm"
                   v-model="watchdogTimeoutFormValid"
@@ -495,7 +520,11 @@
                       :rules="[isValidWatchdogTimeout]"
                     >
                       <template #append-inner>
-                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetWatchdogTimeout">
+                        <v-icon
+                          v-tooltip.bottom="t('generalConfiguration.resetDefault')"
+                          color="white"
+                          @click="resetWatchdogTimeout"
+                        >
                           mdi-restore
                         </v-icon>
                       </template>
@@ -507,7 +536,7 @@
                       variant="text"
                       type="submit"
                     >
-                      Apply
+                      {{ t('common.apply') }}
                     </v-btn>
                   </div>
                 </v-form>
@@ -524,6 +553,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
@@ -553,6 +583,7 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const mainVehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
+const { t } = useI18n()
 const { openSnackbar } = useSnackbar()
 const { showDialog, closeDialog } = useInteractionDialog()
 
