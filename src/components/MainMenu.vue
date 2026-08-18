@@ -5,6 +5,8 @@
       ref="mainMenu"
       class="left-menu slide-in"
       :style="[glassMenuStyles, simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth]"
+      @click.stop
+      @pointerdown.stop
     >
       <v-window v-model="interfaceStore.mainMenuCurrentStep" class="h-full w-full">
         <v-window-item :value="1" class="h-full">
@@ -625,18 +627,22 @@ const currentSubMenu = computed(() => {
   return availableSubMenus.value[interfaceStore.currentSubMenuName]
 })
 
-onClickOutside(mainMenu, () => {
-  if (interfaceStore.mainMenuCurrentStep === 1 && !interfaceStore.isTutorialVisible) {
-    emit('closeMainMenu')
-  }
-  if (
-    interfaceStore.mainMenuCurrentStep === 2 &&
-    currentSubMenuComponentRef.value === null &&
-    !interfaceStore.isTutorialVisible
-  ) {
-    emit('closeMainMenu')
-  }
-})
+onClickOutside(
+  mainMenu,
+  () => {
+    if (interfaceStore.mainMenuCurrentStep === 1 && !interfaceStore.isTutorialVisible) {
+      emit('closeMainMenu')
+    }
+    if (
+      interfaceStore.mainMenuCurrentStep === 2 &&
+      currentSubMenuComponentRef.value === null &&
+      !interfaceStore.isTutorialVisible
+    ) {
+      emit('closeMainMenu')
+    }
+  },
+  { capture: false }
+)
 
 watch(
   () => interfaceStore.currentSubMenuComponentName,
