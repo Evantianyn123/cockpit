@@ -122,7 +122,9 @@
   </div>
 </template>
 <script lang="ts" setup>
+import { useFullscreen } from '@vueuse/core'
 import { getMonth } from 'date-fns'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -144,9 +146,6 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 const { t } = useI18n()
 
 const isDecember = (): boolean => getMonth(new Date()) === 11
-
-import { useFullscreen } from '@vueuse/core'
-import { onBeforeUnmount, onMounted } from 'vue'
 
 import { isElectron } from '@/libs/utils'
 

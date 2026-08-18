@@ -201,11 +201,6 @@ const resetColorsToDefault = (): void => {
   interfaceStore.UIGlassEffect = defaultUIGlassColor
 }
 
-const setMainMenuTrigger = (value: unknown): void => {
-  logUserAction(`Set main menu trigger position to '${value}'`)
-  interfaceStore.mainMenuStyleTrigger = value as typeof interfaceStore.mainMenuStyleTrigger
-}
-
 const setDistanceUnit = (value: unknown): void => {
   logUserAction(`Set distance display unit to '${value}'`)
   interfaceStore.displayUnitPreferences.distance = value as DistanceDisplayUnit
