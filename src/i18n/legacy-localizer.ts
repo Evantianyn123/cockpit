@@ -24,6 +24,7 @@ const dynamicTextPatterns: ReadonlyArray<readonly [RegExp, string]> = [
   [/^Channel (\d+)$/, '通道 $1'],
   [/^Joystick (\d+)$/, '摇杆 $1'],
   [/^axis (\d+)$/i, '轴 $1'],
+  [/^Axis ([A-Z0-9]+)$/, '轴 $1'],
   [/^button (\d+)$/i, '按键 $1'],
   [/^Waypoint (\d+)$/, '航点 $1'],
   [/^Param (\d+):$/, '参数 $1：'],
@@ -63,17 +64,7 @@ export function localizeLegacyText(value: string, locale: SupportedLocale): stri
 export function startLegacyLocalizer(): void {
   if (typeof document === 'undefined' || document.body === null) return
 
-  let pending = false
-  const localize = (): void => {
-    pending = false
-    localizeLegacyDocument(interfaceLocale.value)
-  }
-  const schedule = (): void => {
-    if (pending) return
-    pending = true
-    requestAnimationFrame(localize)
-  }
-
+  const schedule = scheduleLegacyLocalization
   new MutationObserver(schedule).observe(document.body, {
     childList: true,
     characterData: true,
@@ -81,6 +72,22 @@ export function startLegacyLocalizer(): void {
   })
   watch(interfaceLocale, schedule, { flush: 'post' })
   schedule()
+}
+
+let localizationPending = false
+
+/**
+ * Schedules a deduplicated legacy-text scan after Vue has committed its DOM changes.
+ * @returns {void}
+ */
+export function scheduleLegacyLocalization(): void {
+  if (typeof document === 'undefined' || document.body === null || localizationPending) return
+
+  localizationPending = true
+  requestAnimationFrame(() => {
+    localizationPending = false
+    localizeLegacyDocument(interfaceLocale.value)
+  })
 }
 
 /**

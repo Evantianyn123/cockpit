@@ -9,7 +9,7 @@
         class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap"
         :class="shouldBlinkBorder ? 'bg-[#db151233]' : 'bg-slate-800/75'"
       >
-        <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100 text-ellipsis">{{ currentAlert.message }}</p>
+        <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100 text-ellipsis">{{ displayedAlertMessage }}</p>
       </div>
       <div
         ref="expandedAlertsBar"
@@ -110,6 +110,7 @@
 import { useElementBounding, useElementHover, useTimestamp, useToggle, useWindowSize } from '@vueuse/core'
 import { differenceInSeconds, format } from 'date-fns'
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useAlertStore } from '@/stores/alert'
 import { useVehicleAlerterStore } from '@/stores/vehicleAlerter'
@@ -137,6 +138,7 @@ useVehicleAlerterStore()
 const alertStore = useAlertStore()
 const widgetStore = useWidgetManagerStore()
 const timeNow = useTimestamp({ interval: 1000 })
+const { t } = useI18n()
 
 const alertPersistencyInterval = 10 // in seconds
 
@@ -144,6 +146,9 @@ const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
 const currentAlert = ref(alertStore.alerts[0])
 const currentDisplayedAlertIndex = ref(alertStore.alerts.length - 1)
+const displayedAlertMessage = computed(() =>
+  currentAlert.value.message === 'No recent alerts.' ? t('alerter.noRecentAlerts') : currentAlert.value.message
+)
 
 const colorCodeBorderStyle = computed(() => {
   if (currentAlert.value.level === AlertLevel.Critical) return 'border: 2px solid transparent'

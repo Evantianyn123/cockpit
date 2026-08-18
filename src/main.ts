@@ -34,7 +34,7 @@ import { runMigrations } from '@/utils/migrations'
 import App from './App.vue'
 import { contextMenu } from './directives/contextMenu'
 import { i18n } from './i18n'
-import { startLegacyLocalizer } from './i18n/legacy-localizer'
+import { scheduleLegacyLocalization, startLegacyLocalizer } from './i18n/legacy-localizer'
 import vuetify from './plugins/vuetify'
 import { loadFonts } from './plugins/webfontloader'
 import router from './router'
@@ -85,6 +85,9 @@ if (!import.meta.env.DEV) {
 app.component('FontAwesomeIcon', FontAwesomeIcon)
 app.component('VueDraggableResizable', VueDraggableResizable)
 app.directive('contextmenu', contextMenu)
+app.mixin({
+  mounted: scheduleLegacyLocalization,
+})
 app.use(router).use(i18n).use(vuetify).use(createPinia()).use(FloatingVue).use(VueVirtualScroller)
 app.mount('#app')
 startLegacyLocalizer()

@@ -68,6 +68,9 @@ export const enUS = {
     tools: 'Tools',
     video: 'Video',
   },
+  alerter: {
+    noRecentAlerts: 'No recent alerts.',
+  },
   settings: {
     blur: 'Blur',
     centerLeftTab: 'Center-left tab',

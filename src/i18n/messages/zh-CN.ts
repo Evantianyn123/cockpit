@@ -70,6 +70,9 @@ export const zhCN = {
     tools: '工具',
     video: '视频',
   },
+  alerter: {
+    noRecentAlerts: '没有最近告警。',
+  },
   settings: {
     blur: '模糊度',
     centerLeftTab: '左侧居中标签',

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { localizeLegacyDocument, localizeLegacyText } from '@/i18n/legacy-localizer'
+import { localizeLegacyDocument, localizeLegacyText, scheduleLegacyLocalization } from '@/i18n/legacy-localizer'
 import {
   DEFAULT_INTERFACE_LOCALE,
   INTERFACE_LANGUAGE_STORAGE_KEY,
@@ -12,6 +12,7 @@ import { enUS } from '@/i18n/messages/en-US'
 import { zhCN } from '@/i18n/messages/zh-CN'
 
 const originalStoredLocale = localStorage.getItem(INTERFACE_LANGUAGE_STORAGE_KEY)
+const originalRequestAnimationFrame = globalThis.requestAnimationFrame
 
 /**
  * Resolves one nested translation leaf by dotted path.
@@ -28,6 +29,7 @@ function messageAt(messages: Record<string, unknown>, path: string): string {
 afterEach(() => {
   if (originalStoredLocale === null) localStorage.removeItem(INTERFACE_LANGUAGE_STORAGE_KEY)
   else localStorage.setItem(INTERFACE_LANGUAGE_STORAGE_KEY, originalStoredLocale)
+  globalThis.requestAnimationFrame = originalRequestAnimationFrame
   document.body.innerHTML = ''
 })
 
@@ -62,6 +64,8 @@ describe('Cockpit interface language', () => {
     expect(localizeLegacyText('Channel 8', 'zh-CN')).toBe('通道 8')
     expect(localizeLegacyText('axis 0', 'zh-CN')).toBe('轴 0')
     expect(localizeLegacyText('button 2', 'zh-CN')).toBe('按键 2')
+    expect(localizeLegacyText('Axis Y', 'zh-CN')).toBe('轴 Y')
+    expect(localizeLegacyText('ROV functions mapping', 'zh-CN')).toBe('ROV 功能映射')
     expect(localizeLegacyText('Waypoint 3', 'zh-CN')).toBe('航点 3')
     expect(localizeLegacyText('Step 2 of 4', 'zh-CN')).toBe('第 2 步，共 4 步')
     expect(localizeLegacyText('Video\n configuration', 'zh-CN')).toBe('视频设置')
@@ -76,5 +80,17 @@ describe('Cockpit interface language', () => {
 
     expect(document.body.children[0].textContent).toBe('地图')
     expect(document.body.children[1].textContent).toBe('Map')
+  })
+
+  test('schedules localization after a dynamic view mounts', () => {
+    document.body.innerHTML = '<p>Joystick configuration</p>'
+    globalThis.requestAnimationFrame = (callback: FrameRequestCallback) => {
+      callback(0)
+      return 0
+    }
+
+    scheduleLegacyLocalization()
+
+    expect(document.body.textContent).toBe('摇杆设置')
   })
 })
