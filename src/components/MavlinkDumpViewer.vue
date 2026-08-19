@@ -110,7 +110,7 @@
               <span class="w-3 h-3 rounded-sm mt-1 shrink-0" :style="{ backgroundColor: entry.color }" />
               <div class="flex-1 min-w-0">
                 <div class="text-sm break-all flex items-center gap-1.5 flex-wrap">
-                  <span>{{ entry.series.label }}</span>
+                  <span data-cockpit-no-i18n>{{ entry.series.label }}</span>
                   <span
                     v-if="entry.series.min === entry.series.max"
                     class="text-[10px] px-1.5 py-px rounded bg-amber-500/20 text-amber-300 font-mono"

@@ -72,7 +72,11 @@
                     />
                   </div>
                   <div class="flex w-full justify-center mb-2">
-                    <span class="text-lg font-medium" :class="{ 'text-sm': interfaceStore.isOnSmallScreen }">
+                    <span
+                      class="text-lg font-medium"
+                      data-cockpit-no-i18n
+                      :class="{ 'text-sm': interfaceStore.isOnSmallScreen }"
+                    >
                       {{ controllerStore.protocolMapping.name }}
                     </span>
                   </div>
@@ -436,7 +440,7 @@
                         </td>
                         <td class="w-[120px]">
                           <div>
-                            <p class="text-center">
+                            <p class="text-center" data-cockpit-no-i18n>
                               {{ currentButtonActions[item.id as JoystickButton]?.action.name }}
                             </p>
                           </div>
@@ -585,7 +589,7 @@
                         size="small"
                       />
                     </div>
-                    <p class="text-center text-xs px-8">
+                    <p class="text-center text-xs px-8" data-cockpit-no-i18n>
                       {{ action.name }}
                     </p>
                   </Button>

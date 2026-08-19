@@ -36,6 +36,7 @@
             v-else
             class="whitespace-nowrap overflow-hidden text-ellipsis"
             :style="{ maxWidth: `${canvasSize.width * 0.8}px` }"
+            data-cockpit-no-i18n
             @dblclick="enableEditing"
           >
             {{ widget.name }}
@@ -64,7 +65,9 @@
           </v-menu>
         </div>
       </div>
-      <div v-if="isWrapped" class="flex rotate-[270deg] justify-center whitespace-nowrap">{{ widget.name }}</div>
+      <div v-if="isWrapped" class="flex rotate-[270deg] justify-center whitespace-nowrap" data-cockpit-no-i18n>
+        {{ widget.name }}
+      </div>
       <div v-show="!isWrapped" class="flex justify-center h-full px-3 pt-2 gap-x-2">
         <div
           class="flex flex-col justify-center border-[#FFFFFF33] border-dashed rounded-md"

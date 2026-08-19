@@ -17,12 +17,15 @@
         :class="{ 'scroll-text': valueIsOverflowing }"
         :style="{ '--value-scroll-distance': `-${valueOverflow}px` }"
       >
-        <span ref="valueText" class="inline-block">
+        <span ref="valueText" class="inline-block" data-cockpit-no-i18n>
           <span class="font-mono text-xl leading-6">{{ parsedState }}</span>
           <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }} </span>
         </span>
       </div>
-      <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap text-ellipsis overflow-x-hidden">
+      <span
+        class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap text-ellipsis overflow-x-hidden"
+        data-cockpit-no-i18n
+      >
         {{ miniWidget.options.displayName }}
       </span>
     </div>

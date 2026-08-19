@@ -4,6 +4,7 @@
     <div
       class="w-full h-full"
       :style="widget.options.inheritCockpitStyles ? interfaceStore.globalGlassMenuStyles : {}"
+      data-cockpit-no-i18n
       v-html="compiledCode"
     />
   </div>
@@ -44,21 +45,36 @@
             <v-expansion-panel value="html">
               <v-expansion-panel-title static height="30px" class="text-white/60"> HTML </v-expansion-panel-title>
               <v-expansion-panel-text eager>
-                <div ref="htmlEditorContainer" class="editor-container" :style="{ height: editorHeight }" />
+                <div
+                  ref="htmlEditorContainer"
+                  class="editor-container"
+                  data-cockpit-no-i18n
+                  :style="{ height: editorHeight }"
+                />
               </v-expansion-panel-text>
             </v-expansion-panel>
 
             <v-expansion-panel value="js">
               <v-expansion-panel-title static height="30px" class="text-white/60"> JS </v-expansion-panel-title>
               <v-expansion-panel-text eager>
-                <div ref="jsEditorContainer" class="editor-container" :style="{ height: editorHeight }" />
+                <div
+                  ref="jsEditorContainer"
+                  class="editor-container"
+                  data-cockpit-no-i18n
+                  :style="{ height: editorHeight }"
+                />
               </v-expansion-panel-text>
             </v-expansion-panel>
 
             <v-expansion-panel value="css">
               <v-expansion-panel-title static height="30px" class="text-white/60"> CSS </v-expansion-panel-title>
               <v-expansion-panel-text eager>
-                <div ref="cssEditorContainer" class="editor-container" :style="{ height: editorHeight }" />
+                <div
+                  ref="cssEditorContainer"
+                  class="editor-container"
+                  data-cockpit-no-i18n
+                  :style="{ height: editorHeight }"
+                />
               </v-expansion-panel-text>
             </v-expansion-panel>
           </v-expansion-panels>

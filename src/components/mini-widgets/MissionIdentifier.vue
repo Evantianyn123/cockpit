@@ -5,7 +5,7 @@
     @click="configMenuOpen = true"
   >
     <div class="flex items-center overflow-hidden text-lg font-medium text-white whitespace-nowrap">
-      <p class="overflow-x-hidden text-ellipsis">
+      <p class="overflow-x-hidden text-ellipsis" data-cockpit-no-i18n>
         {{ store.missionName }}
         <FontAwesomeIcon
           v-if="store.missionNameIsAutomatic"

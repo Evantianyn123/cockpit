@@ -1,0 +1,21 @@
+/** Joystick and actions configuration UI. */
+export const joystickDictionary: Record<string, string> = {
+  'Joystick configuration': '摇杆配置',
+  'Joystick profiles': '摇杆配置方案',
+  'New profile': '新建方案',
+  'Delete profile': '删除方案',
+  'Gamepad connected': '手柄已连接',
+  'No gamepad connected': '未连接手柄',
+  'Button mapping': '按键映射',
+  'Axis mapping': '轴映射',
+  'Custom label': '自定义标签',
+  'Modifier': '修饰键',
+  'Hold to activate': '按住激活',
+  'Actions configuration': '动作配置',
+  'New action': '新建动作',
+  'Delete action': '删除动作',
+  'Trigger': '触发器',
+  'Auto-run': '自动运行',
+  'Enabled': '已启用',
+  'Disabled': '已禁用',
+}

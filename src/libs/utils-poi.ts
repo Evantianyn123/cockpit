@@ -73,13 +73,13 @@ export const getPoiTooltipHtml = (poi: ResolvedPointOfInterest, coordinates: Poi
   const header = `<strong>${name}</strong><br>${description}`
 
   if (isPoiOnFallbackCoordinates(poi)) {
-    return `${header}<em>Coordinates unknown</em>`
+    return `<div data-cockpit-no-i18n>${header}<em>Coordinates unknown</em></div>`
   }
 
   const statusText = getPoiStatusText(poi)
-  return `
+  return `<div data-cockpit-no-i18n>
     ${header}
     ${statusText ? `<em>${statusText}</em><br>` : ''}
     Lat: ${coordinates[0].toFixed(8)}, Lng: ${coordinates[1].toFixed(8)}
-  `
+  </div>`
 }

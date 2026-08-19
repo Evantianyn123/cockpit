@@ -25,7 +25,7 @@
             <div class="text-caption">Type <code v-pre>{{</code> to autocomplete data lake variables</div>
           </div>
           <div class="editor-wrapper">
-            <div ref="editorContainer" class="editor-container"></div>
+            <div ref="editorContainer" class="editor-container" data-cockpit-no-i18n></div>
             <div v-if="codeError" class="code-error text-error text-caption mt-1">{{ codeError }}</div>
           </div>
         </v-form>

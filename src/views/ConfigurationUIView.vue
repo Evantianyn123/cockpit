@@ -149,20 +149,65 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Language</template>
+          <template #content>
+            <div class="flex w-full">
+              <div class="flex flex-col w-full px-4 pt-5">
+                <div class="flex flex-row justify-start items-center w-full mb-[35px]">
+                  <div class="flex w-[33%]">{{ t('language.label') }}</div>
+                  <div class="flex w-[66%]">
+                    <v-select
+                      :model-value="locale"
+                      :items="localeOptions"
+                      item-title="title"
+                      item-value="value"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      @update:model-value="onLocaleChange"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import { defaultUIGlassColor } from '@/assets/defaults'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import { openSnackbar } from '@/composables/snackbar'
+import { type AppLocale, useLocale } from '@/composables/useLocale'
 import { DistanceDisplayUnit, unitPrettyName } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
+const { t } = useI18n()
+const { locale, setLocale } = useLocale()
+
+const localeOptions = [
+  { title: 'English', value: 'en-US' as AppLocale },
+  { title: '简体中文', value: 'zh-CN' as AppLocale },
+]
+
+const onLocaleChange = (value: AppLocale): void => {
+  setLocale(value)
+  logUserAction(`Set UI language to '${value}'`)
+  openSnackbar({
+    message: value === 'zh-CN' ? t('language.switchedToChinese') : t('language.switchedToEnglish'),
+    variant: 'success',
+    duration: 3000,
+  })
+}
 
 const updateOpacity = (value: number): void => {
   logUserAction(`Set glass effect opacity to ${value}`)

@@ -33,10 +33,13 @@ import { runMigrations } from '@/utils/migrations'
 
 import App from './App.vue'
 import { contextMenu } from './directives/contextMenu'
+import { i18n } from './i18n'
 import vuetify from './plugins/vuetify'
 import { loadFonts } from './plugins/webfontloader'
 import router from './router'
 import { useOmniscientLoggerStore } from './stores/omniscientLogger'
+
+import '@/composables/useLocale'
 
 // Run migrations that are needed for the app to work
 runMigrations()
@@ -83,7 +86,7 @@ if (!import.meta.env.DEV) {
 app.component('FontAwesomeIcon', FontAwesomeIcon)
 app.component('VueDraggableResizable', VueDraggableResizable)
 app.directive('contextmenu', contextMenu)
-app.use(router).use(vuetify).use(createPinia()).use(FloatingVue).use(VueVirtualScroller)
+app.use(router).use(vuetify).use(createPinia()).use(i18n).use(FloatingVue).use(VueVirtualScroller)
 app.mount('#app')
 
 // Initialize the logger store

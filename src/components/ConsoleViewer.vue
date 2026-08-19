@@ -74,7 +74,7 @@
             :style="{ color: levelHex(item.level) }"
             >{{ item.level }}</span
           >
-          <span class="truncate text-gray-200" :title="item.msg">{{ item.msg }}</span>
+          <span class="truncate text-gray-200" data-cockpit-no-i18n :title="item.msg">{{ item.msg }}</span>
         </div>
       </RecycleScroller>
 

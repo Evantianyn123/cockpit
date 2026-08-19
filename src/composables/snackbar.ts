@@ -1,5 +1,7 @@
 import { reactive } from 'vue'
 
+import { translateRuntimeText } from '@/libs/i18n/runtime-translate'
+
 /**
  * Options to configure the snackbar.
  */
@@ -47,7 +49,7 @@ export const closeSnackbar = (id: number): void => {
 }
 
 export const openSnackbar = (options: SnackbarOptions): number => {
-  const snackbar: SnackbarType = { ...options, id: idCounter++ }
+  const snackbar: SnackbarType = { ...options, message: translateRuntimeText(options.message), id: idCounter++ }
   // Persistent snackbars have no timeout, so the close button is the only way to dismiss them.
   if (snackbar.persistent) snackbar.closeButton = true
   state.snackbars.push(snackbar)

@@ -74,11 +74,11 @@
 
                         <v-tooltip location="top">
                           <template #activator="{ props: tooltipProps }">
-                            <div v-bind="tooltipProps" class="w-[390px]">
+                            <div v-bind="tooltipProps" class="w-[390px]" data-cockpit-no-i18n>
                               <ScrollingText :text="item.name" max-width="390px" align="left" :pause-on-hover="false" />
                             </div>
                           </template>
-                          <span>{{ item.name }}</span>
+                          <span data-cockpit-no-i18n>{{ item.name }}</span>
                         </v-tooltip>
                       </div>
                     </td>
@@ -98,7 +98,10 @@
                     </td>
                     <td>
                       <div class="flex items-center justify-start rounded-xl mx-1">
-                        <p class="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis text-left font-mono">
+                        <p
+                          class="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis text-left font-mono"
+                          data-cockpit-no-i18n
+                        >
                           {{ parsedCurrentValue(item.id) }}
                         </p>
                       </div>

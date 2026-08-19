@@ -95,7 +95,7 @@
                   </div>
                 </div>
                 <div class="flex flex-col justify-center mt-1 text-xs text-white/80">
-                  <p class="truncate text-center font-medium">{{ mission.name }}</p>
+                  <p class="truncate text-center font-medium" data-cockpit-no-i18n>{{ mission.name }}</p>
                   <p class="truncate text-center text-[10px] text-white/50">
                     {{ formatDate(new Date(mission.updatedAt)) }}
                   </p>
@@ -165,7 +165,7 @@
         </div>
         <div class="md:w-1/2 w-full py-4 px-[21px] flex flex-col gap-2 shadow-[inset_0_5px_7px_-5px_rgba(0,0,0,0.5)]">
           <div class="flex justify-between items-start gap-2">
-            <h2 class="text-xl font-semibold break-words">{{ detailMission.name }}</h2>
+            <h2 class="text-xl font-semibold break-words" data-cockpit-no-i18n>{{ detailMission.name }}</h2>
             <span v-if="detailMission.vehicleType" class="info-pill shrink-0 text-[11px] py-1 px-3">
               {{ vehicleTypeLabel(detailMission.vehicleType) }}
             </span>

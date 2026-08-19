@@ -19,7 +19,7 @@
             @mouseup="disableMovingOnDrag"
           >
             <v-icon class="opacity-40 flex-shrink-0">mdi-drag</v-icon>
-            <span class="flex-1 text-center truncate">{{ widget.options.containerName }}</span>
+            <span class="flex-1 text-center truncate" data-cockpit-no-i18n>{{ widget.options.containerName }}</span>
           </div>
           <v-btn
             :icon="collapseToggleIcon"

@@ -157,15 +157,18 @@ import SplashScreen from './components/SplashScreen.vue'
 import WidgetBar from './components/WidgetBar.vue'
 import { openMainMenuIfSafeOrDesired } from './composables/armSafetyDialog'
 import { useSnackbar } from './composables/snackbar'
+import { useDomTranslation } from './composables/useDomTranslation'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useDevelopmentStore } from './stores/development'
 import { useMainVehicleStore } from './stores/mainVehicle'
+import { useSnapshotStore } from './stores/snapshot'
 import { useWidgetManagerStore } from './stores/widgetManager'
 import { SubMenuComponent } from './types/general'
+
 const { openSnackbar } = useSnackbar()
-import { useSnapshotStore } from './stores/snapshot'
+useDomTranslation()
 
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()

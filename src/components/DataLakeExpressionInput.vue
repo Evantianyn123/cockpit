@@ -12,13 +12,14 @@
       </v-tooltip>
     </legend>
     <div class="dl-expression-wrapper">
-      <div ref="editorContainer" class="dl-expression-editor" />
+      <div ref="editorContainer" class="dl-expression-editor" data-cockpit-no-i18n />
       <div v-if="isDropdownOpen" :id="listboxId" class="dl-expression-dropdown" role="listbox">
         <div
           v-for="(item, index) in filteredVariables"
           :id="optionId(index)"
           :key="item.id"
           class="dl-expression-option"
+          data-cockpit-no-i18n
           :class="{ 'dl-expression-option-highlighted': index === highlightedIndex }"
           role="option"
           :aria-selected="index === highlightedIndex"

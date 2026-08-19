@@ -286,7 +286,9 @@
                         label
                         class="cursor-grab elevation-1 w-full justify-start"
                       >
-                        <span class="data-lake-variable-label">{{ resolveDisplayName(variable) }}</span>
+                        <span class="data-lake-variable-label" data-cockpit-no-i18n>{{
+                          resolveDisplayName(variable)
+                        }}</span>
                       </v-chip>
                     </div>
                   </VueDraggable>
@@ -347,6 +349,7 @@
                         <div
                           ref="messageEditorContainer"
                           class="h-[60px] w-full mt-2 border border-[#FFFFFF33] rounded-lg"
+                          data-cockpit-no-i18n
                           style="overflow: visible"
                         />
                         <v-btn
@@ -478,6 +481,7 @@
                           : 'small'
                       "
                       class="cursor-grab elevation-1"
+                      data-cockpit-no-i18n
                       :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
                       >{{ resolveDisplayName(variable) }}
                       <v-icon right class="ml-2 -mr-1" @click="removeChipFromGrid(config.key, variable)">

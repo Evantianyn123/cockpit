@@ -12,7 +12,7 @@
       @contextmenu.stop.prevent
     >
       <div class="flex justify-between items-center pt-1 pb-2 px-2">
-        <p class="text-[14px] truncate mr-2">{{ selectedPoi.name }}</p>
+        <p class="text-[14px] truncate mr-2" data-cockpit-no-i18n>{{ selectedPoi.name }}</p>
         <div class="flex shrink-0 items-center gap-x-3">
           <v-icon
             v-if="!isGotoTarget"

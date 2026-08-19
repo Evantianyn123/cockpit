@@ -30,7 +30,7 @@
                   <tr>
                     <td>
                       <div :id="item.id" class="flex items-center justify-left rounded-xl mx-1 w-[160px]">
-                        <p class="whitespace-nowrap overflow-hidden truncate">{{ item.name }}</p>
+                        <p class="whitespace-nowrap overflow-hidden truncate" data-cockpit-no-i18n>{{ item.name }}</p>
                       </div>
                     </td>
                     <td>

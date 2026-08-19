@@ -2,6 +2,8 @@ import { onUnmounted, reactive } from 'vue'
 import { App, createApp } from 'vue'
 
 import InteractionDialogComponent from '@/components/InteractionDialog.vue'
+import { i18n } from '@/i18n'
+import { translateRuntimeMessage, translateRuntimeText } from '@/libs/i18n/runtime-translate'
 import vuetify from '@/plugins/vuetify'
 import router from '@/router'
 import { DialogActions } from '@/types/general'
@@ -133,6 +135,7 @@ export function useInteractionDialog(): {
     })
     dialogApp.use(vuetify)
     dialogApp.use(router)
+    dialogApp.use(i18n)
     dialogApp.mount(mountPoint)
   }
 
@@ -140,10 +143,22 @@ export function useInteractionDialog(): {
     // Settle any still-pending dialog before replacing it so a caller awaiting a superseded dialog doesn't hang
     // forever. Resolve (rather than reject) to avoid unhandled rejections for the many callers that don't await.
     resolveFn?.({ isConfirmed: false })
+    const translatedActions = options.actions?.map(
+      (action: DialogActions): DialogActions => ({
+        ...action,
+        text: translateRuntimeText(action.text),
+      })
+    )
+    const translatedOptions: DialogOptions = {
+      ...options,
+      title: options.title ? translateRuntimeText(options.title) : options.title,
+      message: translateRuntimeMessage(options.message),
+      actions: translatedActions,
+    }
     return new Promise((resolve, reject) => {
       // Merge over a fresh set of defaults so options the caller omits (notably `actions`) never leak from the
       // previous dialog, which would otherwise leave a stale destructive button on an unrelated dialog.
-      Object.assign(dialogProps, defaultDialogState(), options, { showDialog: true })
+      Object.assign(dialogProps, defaultDialogState(), translatedOptions, { showDialog: true })
       resolveFn = resolve
       rejectFn = reject
       mountDialog()

@@ -74,6 +74,7 @@
             <div
               ref="expressionEditorContainer"
               class="h-[300px] border border-[#FFFFFF33] rounded-lg overflow-hidden"
+              data-cockpit-no-i18n
             />
           </div>
           <v-textarea
