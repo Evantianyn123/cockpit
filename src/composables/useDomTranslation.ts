@@ -2,7 +2,13 @@ import { onMounted, onUnmounted, watch } from 'vue'
 
 import { useLocale } from '@/composables/useLocale'
 import { runtimeDictionary } from '@/i18n/dictionary'
-import { lookup, shouldSkipElement, shouldTranslateTextNode, TRANSLATABLE_ATTRIBUTES } from '@/libs/i18n/dom-translator'
+import {
+  lookup,
+  resolveLiveSourceText,
+  shouldSkipElement,
+  shouldTranslateTextNode,
+  TRANSLATABLE_ATTRIBUTES,
+} from '@/libs/i18n/dom-translator'
 import { isProtectedSourceText } from '@/libs/i18n/runtime-translate'
 
 const originalTextByNode = new WeakMap<Text, string>()
@@ -11,14 +17,17 @@ const originalAttributeByElement = new WeakMap<Element, Map<string, string>>()
 const translateTextNode = (node: Text, toChinese: boolean): void => {
   if (!shouldTranslateTextNode(node)) return
   const current = node.nodeValue ?? ''
-  if (!originalTextByNode.has(node)) originalTextByNode.set(node, current)
-  const source = originalTextByNode.get(node) ?? current
+  const cached = originalTextByNode.get(node)
+  const translatedCached = cached === undefined ? undefined : lookup(cached, runtimeDictionary) ?? cached
+  const source = resolveLiveSourceText(current, cached, translatedCached)
+  originalTextByNode.set(node, source)
   if (isProtectedSourceText(source)) return
   if (!toChinese) {
-    node.nodeValue = source
+    if (node.nodeValue !== source) node.nodeValue = source
     return
   }
-  node.nodeValue = lookup(source, runtimeDictionary) ?? source
+  const translated = lookup(source, runtimeDictionary) ?? source
+  if (node.nodeValue !== translated) node.nodeValue = translated
 }
 
 const translateAttributes = (root: Element, toChinese: boolean): void => {
@@ -76,6 +85,10 @@ export function useDomTranslation(): void {
     observer = new MutationObserver((records) => {
       if (!isChinese.value) return
       records.forEach((record) => {
+        if (record.type === 'characterData' && record.target.nodeType === Node.TEXT_NODE) {
+          translateTextNode(record.target as Text, true)
+          return
+        }
         record.addedNodes.forEach((node) => {
           if (node.nodeType === Node.TEXT_NODE) {
             translateTextNode(node as Text, true)

@@ -28,14 +28,16 @@ export const translateRuntimeMessage = (message: string | string[]): string | st
  */
 export const shouldRunDomTranslation = (): boolean => getStoredLocale() === 'zh-CN'
 
+const PROTECTED_TERMS = new Set(['Cockpit', 'BlueOS', 'MAVLink', 'MAVLink2REST', 'ArduPilot'])
+
 /**
- * Keys that must never be translated even when they appear as exact dictionary hits.
+ * Skip translation only when the entire string is a brand or protocol name.
+ * Sentences that contain these terms are translated; the terms stay in the Chinese copy.
  * @param {string} raw
  * @returns {boolean}
  */
 export const isProtectedSourceText = (raw: string): boolean => {
   const normalized = normalizeSourceText(raw)
   if (!normalized) return true
-  const protectedTerms = ['Cockpit', 'BlueOS', 'MAVLink', 'ArduPilot']
-  return protectedTerms.some((term) => normalized === term || normalized.includes(term))
+  return PROTECTED_TERMS.has(normalized)
 }

@@ -29,6 +29,24 @@ export const lookup = (raw: string, dictionary: Readonly<Record<string, string>>
 }
 
 /**
+ * Pick the English source after a live text-node change.
+ * Vue may replace the English in place; the translator may replace it with Chinese.
+ * @param {string} current
+ * @param {string | undefined} cached
+ * @param {string | undefined} translatedCached
+ * @returns {string}
+ */
+export const resolveLiveSourceText = (
+  current: string,
+  cached: string | undefined,
+  translatedCached: string | undefined
+): string => {
+  if (cached === undefined) return current
+  if (current === cached || current === translatedCached) return cached
+  return current
+}
+
+/**
  * Whether the element or any ancestor opts out of runtime translation.
  * @param {Element | null} element
  * @returns {boolean}

@@ -74,7 +74,6 @@
                   <div class="flex w-full justify-center mb-2">
                     <span
                       class="text-lg font-medium"
-                      data-cockpit-no-i18n
                       :class="{ 'text-sm': interfaceStore.isOnSmallScreen }"
                     >
                       {{ controllerStore.protocolMapping.name }}

@@ -4,6 +4,7 @@ import { joystickDictionary } from '@/i18n/dictionary/joystick'
 import { menuDictionary } from '@/i18n/dictionary/menu'
 import { messagesDictionary } from '@/i18n/dictionary/messages'
 import { missionDictionary } from '@/i18n/dictionary/mission'
+import { tutorialDictionary } from '@/i18n/dictionary/tutorial'
 import { videoDictionary } from '@/i18n/dictionary/video'
 import { widgetsDictionary } from '@/i18n/dictionary/widgets'
 
@@ -17,4 +18,5 @@ export const runtimeDictionary: Readonly<Record<string, string>> = Object.freeze
   ...widgetsDictionary,
   ...messagesDictionary,
   ...commonDictionary,
+  ...tutorialDictionary,
 })

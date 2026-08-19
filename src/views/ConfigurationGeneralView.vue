@@ -114,7 +114,10 @@
 
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Vehicle network connection (global address)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
+          <template #subtitle>
+            <span>Current address:</span>
+            <span data-cockpit-no-i18n> {{ mainVehicleStore.globalAddress }}</span>
+          </template>
           <template #info>Sets the network address for device communication. E.g: blueos.local</template>
           <template #content>
             <v-btn
@@ -176,8 +179,12 @@
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>MAVLink2REST URI</template>
           <template #subtitle>
-            Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
-            Status:
+            <span>Current address:</span>
+            <span data-cockpit-no-i18n>
+              {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}
+            </span>
+            <br />
+            <span>Status:</span>
             {{
               vehicleConnected ? 'connected' : vehicleConnected === undefined ? 'connecting...' : 'failed to connect'
             }}
@@ -248,7 +255,10 @@
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Video connection (WebRTC)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
+          <template #subtitle>
+            <span>Current address:</span>
+            <span data-cockpit-no-i18n> {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</span>
+          </template>
           <template #content>
             <v-form
               ref="webRTCSignallingForm"

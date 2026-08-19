@@ -5,10 +5,12 @@ import {
   lookup,
   NO_I18N_ATTRIBUTE,
   normalizeSourceText,
+  resolveLiveSourceText,
   shouldSkipElement,
   shouldTranslateTextNode,
   TRANSLATABLE_ATTRIBUTES,
 } from '@/libs/i18n/dom-translator'
+import { isProtectedSourceText } from '@/libs/i18n/runtime-translate'
 
 describe('normalizeSourceText', () => {
   test('collapses whitespace and trims', () => {
@@ -66,5 +68,46 @@ describe('runtime collision safety', () => {
 describe('TRANSLATABLE_ATTRIBUTES', () => {
   test('limits attribute translation surface', () => {
     expect(TRANSLATABLE_ATTRIBUTES).toEqual(['placeholder', 'title', 'aria-label'])
+  })
+})
+
+describe('isProtectedSourceText', () => {
+  test('skips brand names only when they are the entire string', () => {
+    expect(isProtectedSourceText('Cockpit')).toBe(true)
+    expect(isProtectedSourceText('MAVLink')).toBe(true)
+    expect(isProtectedSourceText('MAVLink2REST')).toBe(true)
+    expect(isProtectedSourceText('Manage Cockpit settings')).toBe(false)
+    expect(isProtectedSourceText('Cockpit folder location:')).toBe(false)
+    expect(isProtectedSourceText('MAVLink2REST URI')).toBe(false)
+  })
+})
+
+describe('resolveLiveSourceText', () => {
+  test('keeps cached English when the node already shows the translation', () => {
+    expect(resolveLiveSourceText('下一步', 'Next', '下一步')).toBe('Next')
+  })
+
+  test('adopts Vue in-place English replacements', () => {
+    expect(resolveLiveSourceText('Next', 'Start', '开始')).toBe('Next')
+  })
+})
+
+describe('brand-containing dictionary entries', () => {
+  test('translates whole sentences while keeping brand tokens', () => {
+    expect(lookup('Manage Cockpit settings', runtimeDictionary)).toBe('管理 Cockpit 设置')
+    expect(lookup('Cockpit folder location:', runtimeDictionary)).toBe('Cockpit 文件夹位置：')
+    expect(lookup('MAVLink2REST URI', runtimeDictionary)).toBe('MAVLink2REST 地址')
+    expect(lookup('Welcome to Cockpit!', runtimeDictionary)).toBe('欢迎使用 Cockpit！')
+    expect(
+      lookup("Cockpit connects to a vehicle's network using a global address.", runtimeDictionary)
+    ).toBe('Cockpit 通过全局地址连接到载具网络。')
+  })
+
+  test('matches multiline tutorial copy after normalization', () => {
+    const raw = `This is usually found automatically, but if necessary you can specify a custom domain to connect
+      to and search for the relevant vehicle components.`
+    expect(lookup(raw, runtimeDictionary)).toBe(
+      '通常会自动发现；如有需要，也可以指定自定义域名来连接并搜索相关载具组件。'
+    )
   })
 })
