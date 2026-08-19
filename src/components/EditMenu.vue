@@ -564,6 +564,7 @@ import MapImg from '@/assets/widgets/Map.png'
 import MiniWidgetsBarImg from '@/assets/widgets/MiniWidgetsBar.png'
 import MissionControlPanelImg from '@/assets/widgets/MissionControlPanel.png'
 import PlotterImg from '@/assets/widgets/Plotter.png'
+import RobotModel3DImg from '@/assets/widgets/RobotModel3D.png'
 import URLVideoPlayerImg from '@/assets/widgets/URLVideoPlayer.png'
 import VideoPlayerImg from '@/assets/widgets/VideoPlayer.png'
 import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
@@ -777,6 +778,7 @@ const widgetImages = {
   MiniWidgetsBar: MiniWidgetsBarImg,
   MissionControlPanel: MissionControlPanelImg,
   Plotter: PlotterImg,
+  RobotModel3D: RobotModel3DImg,
   URLVideoPlayer: URLVideoPlayerImg,
   VideoPlayer: VideoPlayerImg,
   VirtualHorizon: VirtualHorizonImg,
