@@ -98,9 +98,9 @@ describe('brand-containing dictionary entries', () => {
     expect(lookup('Cockpit folder location:', runtimeDictionary)).toBe('Cockpit 文件夹位置：')
     expect(lookup('MAVLink2REST URI', runtimeDictionary)).toBe('MAVLink2REST 地址')
     expect(lookup('Welcome to Cockpit!', runtimeDictionary)).toBe('欢迎使用 Cockpit！')
-    expect(
-      lookup("Cockpit connects to a vehicle's network using a global address.", runtimeDictionary)
-    ).toBe('Cockpit 通过全局地址连接到载具网络。')
+    expect(lookup("Cockpit connects to a vehicle's network using a global address.", runtimeDictionary)).toBe(
+      'Cockpit 通过全局地址连接到载具网络。'
+    )
   })
 
   test('matches multiline tutorial copy after normalization', () => {
