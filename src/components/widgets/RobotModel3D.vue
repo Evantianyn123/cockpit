@@ -128,10 +128,10 @@ onBeforeMount(() => {
     modelUrl: '/models/robot.glb',
     modelForwardAxis: '-z',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    showGrid: true,
+    showGrid: false,
     smoothMovement: true,
   }
-  widget.value.options = { ...defaultOptions, ...widget.value.options }
+  widget.value.options = { ...defaultOptions, ...widget.value.options, showGrid: false }
 })
 
 const rollPath = useResolvedDataLakeTemplate(() => widget.value.options.rollVariableId)
@@ -263,7 +263,7 @@ const normalizeModel = (object: Three.Object3D): void => {
   const size = box.getSize(new lib.Vector3())
   const largestSide = Math.max(size.x, size.y, size.z)
   if (largestSide > 0) {
-    const scale = 2 / largestSide
+    const scale = 3.2 / largestSide
     object.scale.setScalar(scale)
   }
 

@@ -106,7 +106,9 @@
 
     <script>
         // Start console capture
-        const __indexUtils = import('./src/libs/index-utils.js');
+        // Path is in a variable so Vite's HTML rewriter cannot break this classic-script import().
+        const __indexUtilsSrc = './src/libs/index-utils.js';
+        const __indexUtils = import(__indexUtilsSrc);
 
         let __appLoaded = false;
         const __fallbackTimeout = setTimeout(function() {

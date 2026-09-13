@@ -112,3 +112,5 @@ dataLakeLogger.startLogging()
 
 // If the app has successfully loaded, announce that so the console capture can be stopped
 window.dispatchEvent(new CustomEvent('cockpit-app-loaded'))
+const bootOverlay = document.getElementById('non-app-main')
+if (bootOverlay) bootOverlay.style.display = 'none'
