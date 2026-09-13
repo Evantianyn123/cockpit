@@ -13,7 +13,9 @@
   >
     <div class="flex items-center">
       <span class="mr-3 text-slate-100">Heading style</span>
-      <div class="w-40"><Dropdown v-model="widget.options.headingStyle" :options="headingOptions" /></div>
+      <div class="w-40">
+        <Dropdown v-model="widget.options.headingStyle" :options="headingOptions" name-key="name" value-key="value" />
+      </div>
     </div>
   </Dialog>
 </template>
@@ -25,6 +27,7 @@ import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, wa
 
 import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
+import { getStoredLocale } from '@/composables/useLocale'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas, sequentialArray } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -60,7 +63,18 @@ enum HeadingStyle {
   NORTH_UP = 'North Up',
   HEAD_UP = 'Head Up',
 }
-const headingOptions = Object.values(HeadingStyle)
+
+const headingStyleLabels: Record<HeadingStyle, string> = {
+  [HeadingStyle.NORTH_UP]: '北向上',
+  [HeadingStyle.HEAD_UP]: '机头向上',
+}
+
+const headingOptions = computed(() =>
+  Object.values(HeadingStyle).map((value) => ({
+    name: getStoredLocale() === 'zh-CN' ? headingStyleLabels[value] : value,
+    value,
+  }))
+)
 
 const props = defineProps<{
   /**
@@ -74,7 +88,7 @@ onBeforeMount(() => {
   // Set initial widget options if they don't exist
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
-      headingStyle: headingOptions[0],
+      headingStyle: HeadingStyle.NORTH_UP,
     }
   }
 })

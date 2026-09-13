@@ -8,6 +8,8 @@ import { blankMapping } from '@/assets/joystick-profiles'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
+import { actionDisplayName } from '@/libs/i18n/action-display-name'
+import { formatUnmappingDuplicateAxis } from '@/libs/i18n/runtime-templates'
 import {
   joystickCalibrationOptionsKey,
   joystickManager,
@@ -343,9 +345,10 @@ export const useControllerStore = defineStore('controller', () => {
           const oldMappingId = oldMapping.axesCorrespondencies[axis as unknown as JoystickAxis]?.action?.id
           const wasMapped = oldMappingId === mapping.action.id
           if (isDuplicated && wasMapped) {
-            const warningText = `Unmapping '${mapping.action.name}' from input ${axis} layout.
-              Cannot use same action on multiple axes.`
-            showDialog({ message: warningText, variant: 'warning' })
+            showDialog({
+              message: formatUnmappingDuplicateAxis(actionDisplayName(mapping.action.name), axis),
+              variant: 'warning',
+            })
             newMapping.axesCorrespondencies[axis as unknown as JoystickAxis].action = otherAvailableActions.no_function
           }
         })

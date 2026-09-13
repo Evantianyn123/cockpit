@@ -8,7 +8,6 @@ import { settingsManager } from '@/libs/settings-management'
 
 export const systemLoggingEnablingKey = 'cockpit-enable-system-logging'
 export const blueOsSettingsSyncEnablingKey = 'cockpit-enable-blueos-settings-sync'
-export const showSplashScreenOnStartupKey = 'cockpit-show-splash-screen-on-startup'
 
 export const useDevelopmentStore = defineStore('development', () => {
   // Whether the floating console window is open. Kept here (not in a view) so the console stays alive while
@@ -16,7 +15,6 @@ export const useDevelopmentStore = defineStore('development', () => {
   const showConsole = ref(false)
   const enableSystemLogging = useBlueOsStorage(systemLoggingEnablingKey, true)
   const enableBlueOsSettingsSync = useStorage(blueOsSettingsSyncEnablingKey, true)
-  const showSplashScreenOnStartup = useStorage(showSplashScreenOnStartupKey, true)
 
   const shareHardwareDetails = ref<boolean>(
     settingsManager.getKeyValue<boolean>(shareHardwareDetailsKey) ?? defaultShareHardwareDetails
@@ -34,6 +32,5 @@ export const useDevelopmentStore = defineStore('development', () => {
     enableSystemLogging,
     enableBlueOsSettingsSync,
     shareHardwareDetails,
-    showSplashScreenOnStartup,
   }
 })

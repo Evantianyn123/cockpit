@@ -19,8 +19,7 @@
                 Cockpit is an intuitive and customizable cross-platform ground control station for remote vehicles of
                 all types.
               </p>
-              <p class="my-3">It was created by Blue Robotics and is entirely open-source.</p>
-              <p class="mt-1">
+              <p class="mt-3">
                 It currently supports Ardupilot-based vehicles, but has plans to support any generic vehicle, be it
                 communicating MAVLink or not.
               </p>
@@ -37,10 +36,10 @@
                   {{ app_version.version }}
                 </a>
                 <br />
-                <span class="text-sm text-gray-500">Released: {{ app_version.date }}</span>
+                <span class="text-sm text-gray-500">Released: </span>
+                <span class="text-sm text-gray-500">{{ app_version.date }}</span>
               </p>
-              <p class="my-3">Created by Blue Robotics</p>
-              <p class="mt-1">Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom</p>
+              <p class="mt-3">Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom</p>
             </div>
           </div>
           <div class="mb-5 flex justify-center align-center">
@@ -52,15 +51,6 @@
               target="_blank"
               href="https://github.com/bluerobotics/cockpit"
               @click="openExternalLink('GitHub')"
-            />
-            <v-btn
-              class="mx-3"
-              variant="text"
-              icon="mdi-web"
-              size="xs"
-              target="_blank"
-              href="https://bluerobotics.com"
-              @click="openExternalLink('Blue Robotics website')"
             />
             <v-btn
               class="mx-3"

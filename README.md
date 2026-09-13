@@ -343,7 +343,6 @@ See [LICENSE.md](LICENSE.md) for details.
 ## 🏢 About Blue Robotics
 
 <div align="center">
-  <img src="./src/assets/blue-robotics-white-name-logo.avif" width="200">
   <p><strong>On a mission to enable the future of marine robotics</strong></p>
   <p>
     <a href="https://bluerobotics.com">🌐 Website</a> •

@@ -1,5 +1,6 @@
 import { type Ref, ref } from 'vue'
 
+import { actionDisplayName } from '@/libs/i18n/action-display-name'
 import { OtherProtocol } from '@/libs/joystick/protocols/other'
 import {
   type DefaultsEvaluation,
@@ -85,8 +86,12 @@ export const buildJoystickImportRows = (
           id: `axis-${axisKey}`,
           axisKey,
           inputLabel: `Axis ${axisKey}`,
-          fromActionName: `${currentCorr.action.name} (${signed(currentCorr.min)} / ${signed(currentCorr.max)})`,
-          toActionName: `${defaultCorr.action.name} (${signed(defaultCorr.min)} / ${signed(defaultCorr.max)})`,
+          fromActionName: `${actionDisplayName(currentCorr.action.name)} (${signed(currentCorr.min)} / ${signed(
+            currentCorr.max
+          )})`,
+          toActionName: `${actionDisplayName(defaultCorr.action.name)} (${signed(defaultCorr.min)} / ${signed(
+            defaultCorr.max
+          )})`,
         })
       }
       return
@@ -96,8 +101,8 @@ export const buildJoystickImportRows = (
       id: `axis-${axisKey}`,
       axisKey,
       inputLabel: `Axis ${axisKey}`,
-      fromActionName: currentCorr?.action.name ?? 'Unassigned',
-      toActionName: defaultCorr.action.name,
+      fromActionName: currentCorr ? actionDisplayName(currentCorr.action.name) : actionDisplayName('Unassigned'),
+      toActionName: actionDisplayName(defaultCorr.action.name),
     })
   }
 
@@ -116,8 +121,8 @@ export const buildJoystickImportRows = (
       modifier: modKey,
       buttonKey: Number(btnKey),
       inputLabel: `Button ${btnKey} (${modKey})`,
-      fromActionName: currentBtn?.action.name ?? 'Unassigned',
-      toActionName: defaultBtn.action.name,
+      fromActionName: currentBtn ? actionDisplayName(currentBtn.action.name) : actionDisplayName('Unassigned'),
+      toActionName: actionDisplayName(defaultBtn.action.name),
     })
   }
 

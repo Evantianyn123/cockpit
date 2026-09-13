@@ -27,14 +27,6 @@
               class="min-w-[155px]"
               @update:model-value="onToggleSystemLogging"
             />
-            <v-switch
-              :model-value="devStore.showSplashScreenOnStartup"
-              label="Show splashscreen on startup"
-              color="white"
-              hide-details
-              class="min-w-[155px]"
-              @update:model-value="onToggleSplashScreen"
-            />
           </div>
         </div>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
@@ -171,11 +163,6 @@ const onToggleSystemLogging = (value: boolean | null): void => {
   devStore.enableSystemLogging = Boolean(value)
   logUserAction(`${value ? 'Enabled' : 'Disabled'} system logging`)
   reloadCockpitAndWarnUser()
-}
-
-const onToggleSplashScreen = (value: boolean | null): void => {
-  devStore.showSplashScreenOnStartup = Boolean(value)
-  logUserAction(`${value ? 'Enabled' : 'Disabled'} splash screen on startup`)
 }
 
 const openConsole = (): void => {

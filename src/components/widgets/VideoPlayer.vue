@@ -171,6 +171,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import StatsForNerds from '@/components/VideoPlayerStatsForNerds.vue'
+import { formatVideoStreamLoading } from '@/libs/i18n/runtime-templates'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -405,12 +406,12 @@ const loadingMessage = computed(() => {
   const streamInfo = nameSelectedStream.value
     ? `'${nameSelectedStream.value} (${externalStreamId.value ?? 'unknown'})'`
     : ''
-  if (showSuccessState.value) return 'Stream loaded'
-  return (streamConnected.value ? 'Loading' : 'Connecting to') + ` stream ${streamInfo}`
+  return formatVideoStreamLoading(showSuccessState.value, !streamConnected.value, streamInfo)
 })
 
 const toggleVerboseLoading = (): void => {
   showVerboseLoadingTemporary.value = !showVerboseLoadingTemporary.value
+  logUserAction(`${showVerboseLoadingTemporary.value ? 'Showed' : 'Hid'} video loading details`)
 }
 </script>
 

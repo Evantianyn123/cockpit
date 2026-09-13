@@ -184,4 +184,12 @@ export const commonDictionary: Record<string, string> = {
   'Move': '移动',
   'Cut': '剪切',
   'Paste': '粘贴',
+  'Cockpit is an intuitive and customizable cross-platform ground control station for remote vehicles of all types.':
+    'Cockpit 是一款直观、可定制的跨平台地面站，适用于各类遥控载具。',
+  'It currently supports Ardupilot-based vehicles, but has plans to support any generic vehicle, be it communicating MAVLink or not.':
+    '目前支持基于 ArduPilot 的载具，后续也计划支持使用或不使用 MAVLink 的通用载具。',
+  'Released:': '发布日期：',
+  'Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom': '许可证：AGPL-3.0-only 或 LicenseRef-Cockpit-Custom',
+  'To help us understand how Cockpit is being used and prioritise the development effort, the application shares a small set of anonymous information with the Blue Robotics team.':
+    '为帮助了解 Cockpit 的使用情况并安排开发优先级，应用会向 Blue Robotics 团队发送少量匿名信息。',
 }

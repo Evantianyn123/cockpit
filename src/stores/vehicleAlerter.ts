@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { watch } from 'vue'
 
+import { MavAutopilot } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { flightModeLabel } from '@/libs/i18n/flight-mode-labels'
+import { formatVehicleArmed, formatVehicleConnection, formatVehicleModeChanged } from '@/libs/i18n/runtime-templates'
+import { getVehicleTypeFromMavType } from '@/libs/vehicle/ardupilot/common'
 import { useAlertStore } from '@/stores/alert'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { Alert, AlertLevel } from '@/types/alert'
@@ -16,14 +20,18 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
 
   watch(
     () => vehicleStore.mode,
-    () => alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle mode changed to ${vehicleStore.mode}.`))
+    (mode) => {
+      const isPx4 = vehicleStore.firmwareType === MavAutopilot.MAV_AUTOPILOT_PX4
+      const vehicleType = vehicleStore.vehicleType ? getVehicleTypeFromMavType(vehicleStore.vehicleType) : undefined
+      const modeLabel = flightModeLabel(mode, vehicleType, isPx4)
+      alertStore.pushAlert(new Alert(AlertLevel.Info, formatVehicleModeChanged(modeLabel)))
+    }
   )
 
   watch(
     () => vehicleStore.isArmed,
     (isArmedNow) => {
-      const state = isArmedNow ? 'armed' : 'disarmed'
-      alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle ${state}`))
+      alertStore.pushAlert(new Alert(AlertLevel.Info, formatVehicleArmed(isArmedNow)))
     }
   )
 
@@ -31,8 +39,7 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
     () => vehicleStore.isVehicleOnline,
     (isOnlineNow) => {
       const alertLevel = isOnlineNow ? AlertLevel.Success : AlertLevel.Error
-      const alertMessage = isOnlineNow ? 'connected' : 'disconnected'
-      alertStore.pushAlert(new Alert(alertLevel, `Vehicle ${alertMessage}`))
+      alertStore.pushAlert(new Alert(alertLevel, formatVehicleConnection(isOnlineNow)))
     }
   )
 })

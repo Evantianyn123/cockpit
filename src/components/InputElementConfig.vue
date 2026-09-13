@@ -68,7 +68,7 @@
                       :value="cockpitAction"
                       class="bg-[#000000AA]"
                     >
-                      {{ cockpitAction.name }}
+                      {{ actionDisplayName(cockpitAction.name) }}
                     </option>
                   </select>
                 </div>
@@ -358,7 +358,7 @@
                     :value="cockpitAction"
                     class="bg-[#000000AA]"
                   >
-                    {{ cockpitAction.name }}
+                    {{ actionDisplayName(cockpitAction.name) }}
                   </option>
                 </select>
               </div>
@@ -389,6 +389,7 @@ import {
   getDataLakeVariableInfo,
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
+import { actionDisplayName } from '@/libs/i18n/action-display-name'
 import { availableCockpitActions } from '@/libs/joystick/protocols/cockpit-actions'
 import { machinizeString } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'

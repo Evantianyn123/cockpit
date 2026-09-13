@@ -111,18 +111,11 @@
     :is-visible="interfaceStore.showSkullAnimation"
     @animation-complete="interfaceStore.hideSkullAnimation"
   />
-  <Transition
-    leave-active-class="transition-opacity duration-500 ease-in-out"
-    leave-from-class="opacity-100"
-    leave-to-class="opacity-0"
-  >
-    <SplashScreen v-if="interfaceStore.showSplashScreen" />
-  </Transition>
 </template>
 
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
 import CameraReplacementDialog from '@/components/CameraReplacementDialog.vue'
@@ -145,21 +138,18 @@ import {
   registerActionCallback,
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
-import { isElectron, sleep } from '@/libs/utils'
-import { useMissionStore } from '@/stores/mission'
+import { isElectron } from '@/libs/utils'
 
 import About from './components/About.vue'
 import AltitudeSlider from './components/AltitudeSlider.vue'
 import EditMenu from './components/EditMenu.vue'
 import MainMenu from './components/MainMenu.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
-import SplashScreen from './components/SplashScreen.vue'
 import WidgetBar from './components/WidgetBar.vue'
 import { openMainMenuIfSafeOrDesired } from './composables/armSafetyDialog'
 import { useSnackbar } from './composables/snackbar'
 import { useDomTranslation } from './composables/useDomTranslation'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
-import { checkBlueOsUserDataSimilarity } from './libs/blueos'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useDevelopmentStore } from './stores/development'
 import { useMainVehicleStore } from './stores/mainVehicle'
@@ -174,7 +164,6 @@ const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const devStore = useDevelopmentStore()
-const missionStore = useMissionStore()
 
 // Initialize the snapshot store to register action callbacks
 useSnapshotStore()
@@ -197,33 +186,6 @@ const closeSubMenuModal = (): void => {
 
 // Main menu
 const isSlidingOut = ref(false)
-
-// Check if the user data in browser storage is the same as on blueOS; if not, keep the splash screen open for a maximum of 20 seconds.
-onBeforeMount(async () => {
-  if (!devStore.showSplashScreenOnStartup) {
-    interfaceStore.showSplashScreen = false
-    return
-  }
-  const minSplashDuration = 5000
-  const maxSplashDuration = 15000
-  const startTime = Date.now()
-  let isBlueOSUserDataSimilar = false
-
-  // Close splash screen no matter what, after 15 seconds
-  setTimeout(() => {
-    interfaceStore.showSplashScreen = false
-  }, maxSplashDuration)
-
-  while (!isBlueOSUserDataSimilar) {
-    isBlueOSUserDataSimilar = await checkBlueOsUserDataSimilarity(vehicleStore.globalAddress, missionStore.username)
-    if (!isBlueOSUserDataSimilar) await sleep(1000)
-  }
-
-  const elapsed = Date.now() - startTime
-  if (elapsed < minSplashDuration) await sleep(minSplashDuration - elapsed)
-
-  interfaceStore.showSplashScreen = false
-})
 
 watch(
   () => interfaceStore.isConfigModalVisible,

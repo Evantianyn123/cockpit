@@ -71,7 +71,6 @@ export const useAppInterfaceStore = defineStore('responsive', {
     isVehicleDefaultsJoystickImportModalVisible: false,
     userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
     configPanelVisible: false,
-    showSplashScreen: true,
   }),
   actions: {
     updateWidth() {

@@ -109,10 +109,7 @@
             class="mr-1"
           />
           <div class="flex items-center gap-x-1">
-            <v-tooltip
-              location="top"
-              text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
-            >
+            <v-tooltip location="top" :text="batteryLevelsHelp">
               <template #activator="{ props: infoProps }">
                 <v-icon
                   v-bind="infoProps"
@@ -215,6 +212,7 @@ import { useDebounce } from '@vueuse/core'
 import { computed, onBeforeMount, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import { defaultBatteryLevelColorScheme, defaultBatteryLevelThresholds } from '@/assets/defaults'
+import { translateRuntimeText } from '@/libs/i18n/runtime-translate'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -242,6 +240,11 @@ const defaultOptions = {
 const store = useMainVehicleStore()
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
+const batteryLevelsHelp = computed(() =>
+  translateRuntimeText(
+    'Configure these voltage levels according to your battery pack. Defaults are based on a 4S Li-ion battery pack.'
+  )
+)
 
 const showCurrent = ref(true)
 const toggleIntervaler = ref<ReturnType<typeof setInterval> | undefined>(undefined)

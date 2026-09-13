@@ -7,7 +7,7 @@ export const joystickDictionary: Record<string, string> = {
   'Gamepad connected': '手柄已连接',
   'No gamepad connected': '未连接手柄',
   ['No joystick connected. Live input is unavailable, but you can still configure mappings, import defaults, and ' +
-    'import or export joystick configurations below.']:
+  'import or export joystick configurations below.']:
     '未连接摇杆。无法显示实时输入，但仍可在下方配置映射、导入默认值，以及导入或导出摇杆配置。',
   'General settings': '常规设置',
   'Hold last joystick input when window is hidden (tab changed or window minimized)':
@@ -53,4 +53,21 @@ export const joystickDictionary: Record<string, string> = {
   'Enabled': '已启用',
   'Disabled': '已禁用',
   'No function': '无功能',
+  'Axis Calibration': '轴校准',
+  'Cockpit Action': 'Cockpit 动作',
+  'MAVLink Manual Control': 'MAVLink 手动控制',
+  'unassigned': '未分配',
+  'Unassigned': '未分配',
+  'Go to next view': '下一视图',
+  'Go to previous view': '上一视图',
+  'Toggle full screen': '切换全屏',
+  'Mavlink arm': 'MAVLink 解锁',
+  'Mavlink disarm': 'MAVLink 锁定',
+  'Toggle bottom bar': '切换底栏',
+  'Toggle top bar': '切换顶栏',
+  'Start recording all streams': '开始录制全部视频流',
+  'Stop recording all streams': '停止录制全部视频流',
+  'Toggle recording all streams': '切换录制全部视频流',
+  'Take snapshot': '拍摄快照',
+  'Hold to confirm': '按住确认',
 }

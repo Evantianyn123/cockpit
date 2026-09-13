@@ -2,7 +2,9 @@
   <div>
     <Dropdown
       :model-value="currentMode"
-      :options="vehicleStore.modesAvailable()"
+      :options="modeOptions"
+      name-key="name"
+      value-key="value"
       class="min-w-[128px]"
       @update:model-value="onModeSelected"
     />
@@ -10,9 +12,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import { MavAutopilot } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { flightModeLabel } from '@/libs/i18n/flight-mode-labels'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { getVehicleTypeFromMavType } from '@/libs/vehicle/ardupilot/common'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import Dropdown from '../Dropdown.vue'
@@ -21,8 +26,15 @@ datalogger.registerUsage(DatalogVariable.mode)
 const vehicleStore = useMainVehicleStore()
 const currentMode = ref()
 
-// Bound to the dropdown's user-selection event (not a watch on currentMode) so that automated mode changes
-// reflected by the polling below don't get logged or re-issued as if the user changed the mode.
+const modeOptions = computed(() => {
+  const isPx4 = vehicleStore.firmwareType === MavAutopilot.MAV_AUTOPILOT_PX4
+  const vehicleType = vehicleStore.vehicleType ? getVehicleTypeFromMavType(vehicleStore.vehicleType) : undefined
+  return vehicleStore.modesAvailable().map((value) => ({
+    name: flightModeLabel(value, vehicleType, isPx4),
+    value,
+  }))
+})
+
 const onModeSelected = (newMode: unknown): void => {
   currentMode.value = newMode
   if (newMode === undefined || newMode === vehicleStore.mode) return

@@ -31,6 +31,7 @@
 import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
+import { actionDisplayName } from '@/libs/i18n/action-display-name'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { scale } from '@/libs/utils'
 import {
@@ -389,14 +390,16 @@ const updateLabelsState = (): void => {
   Object.values(JoystickButton).forEach((button) => {
     if (isNaN(Number(button))) return
     const buttonActionCorrespondency = buttonsActionsCorrespondency.value[button as JoystickButton] || undefined
-    const functionName =
-      buttonActionCorrespondency === undefined ? 'unassigned' : buttonActionCorrespondency.action.name
+    const isUnassigned = buttonActionCorrespondency === undefined
+    const functionName = isUnassigned
+      ? actionDisplayName('unassigned')
+      : actionDisplayName(buttonActionCorrespondency.action.name)
     // @ts-ignore: we already check if button is a number and so if button is a valid index
     const labelId = buttonPath[button].replace('path', 'text')
     const overlay = labelOverlays.value.find((l) => l.id === labelId)
     if (overlay) {
       overlay.text = functionName
-      overlay.italic = functionName === 'unassigned'
+      overlay.italic = isUnassigned
     }
   })
 }

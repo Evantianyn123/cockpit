@@ -72,10 +72,7 @@
                     />
                   </div>
                   <div class="flex w-full justify-center mb-2">
-                    <span
-                      class="text-lg font-medium"
-                      :class="{ 'text-sm': interfaceStore.isOnSmallScreen }"
-                    >
+                    <span class="text-lg font-medium" :class="{ 'text-sm': interfaceStore.isOnSmallScreen }">
                       {{ controllerStore.protocolMapping.name }}
                     </span>
                   </div>
@@ -440,7 +437,9 @@
                         <td class="w-[120px]">
                           <div>
                             <p class="text-center" data-cockpit-no-i18n>
-                              {{ currentButtonActions[item.id as JoystickButton]?.action.name }}
+                              {{
+                                actionDisplayName(currentButtonActions[item.id as JoystickButton]?.action.name ?? '')
+                              }}
                             </p>
                           </div>
                         </td>
@@ -589,7 +588,7 @@
                       />
                     </div>
                     <p class="text-center text-xs px-8" data-cockpit-no-i18n>
-                      {{ action.name }}
+                      {{ actionDisplayName(action.name) }}
                     </p>
                   </Button>
                 </div>
@@ -670,6 +669,8 @@ import { useSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
+import { actionDisplayName } from '@/libs/i18n/action-display-name'
+import { formatButtonRemapped } from '@/libs/i18n/runtime-templates'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
@@ -842,7 +843,10 @@ const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
   ]
 
   return buttonActionsToShow.value
-    .filter((action: JoystickAction) => action.name.toLowerCase().includes(searchText.value.toLowerCase()))
+    .filter((action: JoystickAction) => {
+      const query = searchText.value.toLowerCase()
+      return action.name.toLowerCase().includes(query) || actionDisplayName(action.name).toLowerCase().includes(query)
+    })
     .filter((action: JoystickAction) => allowedProtocols.includes(action.protocol as JoystickProtocol))
     .filter((action: JoystickAction) => {
       const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
@@ -988,7 +992,10 @@ const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction):
     showJoystickLayout.value = false
     nextTick(() => (showJoystickLayout.value = true))
   }, 1000)
-  openSnackbar({ message: `Button ${input.id} remapped to function '${action.name}'.`, variant: 'success' })
+  openSnackbar({
+    message: formatButtonRemapped(input.id, actionDisplayName(action.name)),
+    variant: 'success',
+  })
 }
 
 // Automatically set the current joystick when it changes for the first time
