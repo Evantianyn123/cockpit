@@ -120,19 +120,33 @@ const forwardAxisOptions = [
   { title: '-X', value: '-x' },
 ]
 
+const ROBOT_GLB_NAME = 'models/robot.glb'
+const defaultRobotModelUrl = `${import.meta.env.BASE_URL}${ROBOT_GLB_NAME}`.replace(/\/+/g, '/')
+
+const isBuiltInRobotModel = (url: string | undefined): boolean => url?.endsWith(ROBOT_GLB_NAME) ?? false
+
+/** Root-relative paths break under Electron file://; rewrite them with Vite's base URL. */
+const resolveModelUrl = (url: string): string => {
+  if (url.startsWith('/') && !url.startsWith('//')) {
+    return `${import.meta.env.BASE_URL}${url.slice(1)}`.replace(/\/+/g, '/')
+  }
+  return url
+}
+
 onBeforeMount(() => {
   const defaultOptions = {
     rollVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/roll',
     pitchVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/pitch',
     yawVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/yaw',
-    modelUrl: '/models/robot.glb',
+    modelUrl: defaultRobotModelUrl,
     modelForwardAxis: '+x',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     showGrid: false,
     smoothMovement: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options, showGrid: false }
-  if (widget.value.options.modelUrl?.endsWith('/models/robot.glb')) {
+  if (isBuiltInRobotModel(widget.value.options.modelUrl)) {
+    widget.value.options.modelUrl = resolveModelUrl(widget.value.options.modelUrl)
     widget.value.options.modelForwardAxis = '+x'
   }
 })
@@ -171,7 +185,6 @@ const statusMessage = computed(() => {
 })
 
 const LEVEL_ATTITUDE = { roll: 0, pitch: 0, yaw: 0 }
-const ROBOT_GLB_SUFFIX = '/models/robot.glb'
 // SolidWorks Y-up export: swap Y (file up) and Z (file side) so +Z is top in the widget.
 const ROBOT_GLB_MESH_CORRECTION_X = -Math.PI / 2
 
@@ -345,7 +358,7 @@ const loadModel = async (): Promise<void> => {
     dracoLoader.setDecoderPath(`${import.meta.env.BASE_URL}draco/gltf/`)
     const loader = new GLTFLoader()
     loader.setDRACOLoader(dracoLoader)
-    const gltf = await loader.loadAsync(widget.value.options.modelUrl)
+    const gltf = await loader.loadAsync(resolveModelUrl(widget.value.options.modelUrl))
     dracoLoader.dispose()
     loaded = gltf.scene
   } catch {
@@ -358,7 +371,7 @@ const loadModel = async (): Promise<void> => {
   }
 
   const mesh = loaded ?? buildPlaceholderModel()
-  if (loaded && widget.value.options.modelUrl?.endsWith(ROBOT_GLB_SUFFIX)) {
+  if (loaded && isBuiltInRobotModel(widget.value.options.modelUrl)) {
     const wrapper = new lib.Group()
     wrapper.rotation.x = ROBOT_GLB_MESH_CORRECTION_X
     wrapper.add(mesh)
