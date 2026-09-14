@@ -119,7 +119,8 @@ const localAxesForModel = ({ forward, right, up }: BodyAxes, forwardAxis: ModelF
     case '+z':
       return [negate(right), up, forward]
     case '+x':
-      return [forward, up, right]
+      // +X nose, +Y side, +Z top. robot.glb is Y-up in the file; loadModel applies rotateX(-π/2) first.
+      return [forward, negate(right), up]
     case '-x':
       return [negate(forward), up, negate(right)]
     default:

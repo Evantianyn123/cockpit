@@ -101,6 +101,25 @@ describe('attitudeToModelQuaternion', () => {
   })
 })
 
+describe('attitudeToModelQuaternion (+x model, Z-up after mesh correction)', () => {
+  const axis = '+x' as const
+
+  test('level attitude maps model +X/+Y/+Z to body forward/port/up', () => {
+    const q = attitudeToModelQuaternion(level, axis)
+    expectDirection(rotate(q, [1, 0, 0]), [0, 0, -1])
+    expectDirection(rotate(q, [0, 1, 0]), [-1, 0, 0])
+    expectDirection(rotate(q, [0, 0, 1]), [0, 1, 0])
+  })
+
+  test('pure pitch lifts the nose toward world up', () => {
+    expectDirection(noseDirection({ ...level, pitch: radians(90) }, axis), [0, 1, 0])
+  })
+
+  test('pure yaw turns the nose toward world east', () => {
+    expectDirection(noseDirection({ ...level, yaw: radians(90) }, axis), [1, 0, 0])
+  })
+})
+
 describe('isUsableAttitude', () => {
   test('accepts a fully populated attitude', () => {
     expect(isUsableAttitude(level)).toBe(true)

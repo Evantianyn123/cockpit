@@ -126,12 +126,15 @@ onBeforeMount(() => {
     pitchVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/pitch',
     yawVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/yaw',
     modelUrl: '/models/robot.glb',
-    modelForwardAxis: '-z',
+    modelForwardAxis: '+x',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     showGrid: false,
     smoothMovement: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options, showGrid: false }
+  if (widget.value.options.modelUrl?.endsWith('/models/robot.glb')) {
+    widget.value.options.modelForwardAxis = '+x'
+  }
 })
 
 const rollPath = useResolvedDataLakeTemplate(() => widget.value.options.rollVariableId)
@@ -166,6 +169,11 @@ const statusMessage = computed(() => {
   if (!hasAttitude.value) return 'Waiting for attitude data from the vehicle.'
   return undefined
 })
+
+const LEVEL_ATTITUDE = { roll: 0, pitch: 0, yaw: 0 }
+const ROBOT_GLB_SUFFIX = '/models/robot.glb'
+// SolidWorks Y-up export: swap Y (file up) and Z (file side) so +Z is top in the widget.
+const ROBOT_GLB_MESH_CORRECTION_X = -Math.PI / 2
 
 const MAX_FPS = 30
 const FRAME_INTERVAL_MS = 1000 / MAX_FPS
@@ -332,7 +340,13 @@ const loadModel = async (): Promise<void> => {
   let loaded: Three.Object3D | undefined
   try {
     const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
-    const gltf = await new GLTFLoader().loadAsync(widget.value.options.modelUrl)
+    const { DRACOLoader } = await import('three/examples/jsm/loaders/DRACOLoader.js')
+    const dracoLoader = new DRACOLoader()
+    dracoLoader.setDecoderPath(`${import.meta.env.BASE_URL}draco/gltf/`)
+    const loader = new GLTFLoader()
+    loader.setDRACOLoader(dracoLoader)
+    const gltf = await loader.loadAsync(widget.value.options.modelUrl)
+    dracoLoader.dispose()
     loaded = gltf.scene
   } catch {
     loaded = undefined
@@ -343,15 +357,35 @@ const loadModel = async (): Promise<void> => {
     return
   }
 
-  modelRoot = loaded ?? buildPlaceholderModel()
+  const mesh = loaded ?? buildPlaceholderModel()
+  if (loaded && widget.value.options.modelUrl?.endsWith(ROBOT_GLB_SUFFIX)) {
+    const wrapper = new lib.Group()
+    wrapper.rotation.x = ROBOT_GLB_MESH_CORRECTION_X
+    wrapper.add(mesh)
+    modelRoot = wrapper
+  } else {
+    modelRoot = mesh
+  }
   normalizeModel(modelRoot)
   scene?.add(modelRoot)
 
   targetQuaternion = targetQuaternion ?? new lib.Quaternion()
-  modelRoot.quaternion.copy(targetQuaternion)
+  syncModelOrientation()
 
   sceneStatus.value = loaded ? 'ready' : 'placeholder'
   renderFrame()
+  startLoop()
+}
+
+const syncModelOrientation = (): void => {
+  if (!targetQuaternion) return
+  const attitudeInput = hasAttitude.value ? attitude.value : LEVEL_ATTITUDE
+  const { x, y, z, w } = attitudeToModelQuaternion(
+    attitudeInput,
+    widget.value.options.modelForwardAxis as ModelForwardAxis
+  )
+  targetQuaternion.set(x, y, z, w)
+  if (modelRoot) modelRoot.quaternion.copy(targetQuaternion)
   startLoop()
 }
 
@@ -413,13 +447,7 @@ onUnmounted(() => {
 })
 
 watch([attitude, hasAttitude, () => widget.value.options.modelForwardAxis], () => {
-  if (!targetQuaternion || !hasAttitude.value) return
-  const { x, y, z, w } = attitudeToModelQuaternion(
-    attitude.value,
-    widget.value.options.modelForwardAxis as ModelForwardAxis
-  )
-  targetQuaternion.set(x, y, z, w)
-  startLoop()
+  syncModelOrientation()
 })
 
 watch(canvasSize, applyCanvasSize)
