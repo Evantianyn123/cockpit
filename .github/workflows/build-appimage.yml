@@ -1,0 +1,114 @@
+﻿name: Build AppImage
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version (used when no git tag exists)'
+        required: false
+        default: '0.0.0-fork'
+      build_x64:
+        description: 'Also build linux x86_64 AppImage'
+        type: boolean
+        default: false
+
+env:
+  NODE_OPTIONS: --max-old-space-size=6144
+
+jobs:
+  build-appimage-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      - name: Set version as environment variable
+        run: |
+          if VERSION=$(git describe --tags --long 2>/dev/null | sed 's/^v//'); then
+            :
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "COCKPIT_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Install and build
+        env:
+          ELECTRON: true
+        run: |
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
+
+      - name: Deploy AppImage
+        run: yarn deploy:electron
+
+      - name: Package AppImage in tar.gz
+        run: |
+          cd dist
+          chmod +x Cockpit-linux-arm64-${{ env.VERSION }}.AppImage
+          tar -czvf Cockpit-linux-arm64-${{ env.VERSION }}.AppImage.tar.gz \
+            Cockpit-linux-arm64-${{ env.VERSION }}.AppImage
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cockpit-linux-arm64-${{ env.VERSION }}.AppImage.tar.gz
+          path: dist/Cockpit-linux-arm64-${{ env.VERSION }}.AppImage.tar.gz
+          if-no-files-found: error
+
+  build-appimage-x64:
+    if: ${{ github.event.inputs.build_x64 == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      - name: Set version as environment variable
+        run: |
+          if VERSION=$(git describe --tags --long 2>/dev/null | sed 's/^v//'); then
+            :
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "COCKPIT_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Install and build
+        env:
+          ELECTRON: true
+        run: |
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
+
+      - name: Deploy AppImage
+        run: yarn deploy:electron
+
+      - name: Package AppImage in tar.gz
+        run: |
+          cd dist
+          chmod +x Cockpit-linux-x86_64-${{ env.VERSION }}.AppImage
+          tar -czvf Cockpit-linux-x86_64-${{ env.VERSION }}.AppImage.tar.gz \
+            Cockpit-linux-x86_64-${{ env.VERSION }}.AppImage
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cockpit-linux-x86_64-${{ env.VERSION }}.AppImage.tar.gz
+          path: dist/Cockpit-linux-x86_64-${{ env.VERSION }}.AppImage.tar.gz
+          if-no-files-found: error
