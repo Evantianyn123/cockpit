@@ -30,11 +30,13 @@ jobs:
         with:
           node-version: '22.13.0'
 
+      - name: Fetch tags
+        run: git fetch --tags --force
+
       - name: Set version as environment variable
         run: |
-          if VERSION=$(git describe --tags --long 2>/dev/null | sed 's/^v//'); then
-            :
-          else
+          VERSION=$(git describe --tags --long 2>/dev/null | sed 's/^v//' || true)
+          if [ -z "$VERSION" ]; then
             VERSION="${{ github.event.inputs.version }}"
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
@@ -79,11 +81,13 @@ jobs:
         with:
           node-version: '22.13.0'
 
+      - name: Fetch tags
+        run: git fetch --tags --force
+
       - name: Set version as environment variable
         run: |
-          if VERSION=$(git describe --tags --long 2>/dev/null | sed 's/^v//'); then
-            :
-          else
+          VERSION=$(git describe --tags --long 2>/dev/null | sed 's/^v//' || true)
+          if [ -z "$VERSION" ]; then
             VERSION="${{ github.event.inputs.version }}"
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
