@@ -1,5 +1,5 @@
 <template>
-  <div class="main" :style="{ backgroundColor: widget.options.backgroundColor }">
+  <div class="main">
     <canvas ref="canvasRef" class="w-full h-full block" />
     <div v-if="statusMessage" class="status-overlay">
       <p class="text-center text-white text-sm px-4">{{ statusMessage }}</p>
@@ -125,7 +125,11 @@ const defaultRobotModelUrl = `${import.meta.env.BASE_URL}${ROBOT_GLB_NAME}`.repl
 
 const isBuiltInRobotModel = (url: string | undefined): boolean => url?.endsWith(ROBOT_GLB_NAME) ?? false
 
-/** Root-relative paths break under Electron file://; rewrite them with Vite's base URL. */
+/**
+ * Root-relative paths break under Electron file://; rewrite them with Vite's base URL.
+ * @param {string} url
+ * @returns {string}
+ */
 const resolveModelUrl = (url: string): string => {
   if (url.startsWith('/') && !url.startsWith('//')) {
     return `${import.meta.env.BASE_URL}${url.slice(1)}`.replace(/\/+/g, '/')
@@ -140,7 +144,6 @@ onBeforeMount(() => {
     yawVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/yaw',
     modelUrl: defaultRobotModelUrl,
     modelForwardAxis: '+x',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     showGrid: false,
     smoothMovement: true,
   }
@@ -187,6 +190,7 @@ const statusMessage = computed(() => {
 const LEVEL_ATTITUDE = { roll: 0, pitch: 0, yaw: 0 }
 // SolidWorks Y-up export: swap Y (file up) and Z (file side) so +Z is top in the widget.
 const ROBOT_GLB_MESH_CORRECTION_X = -Math.PI / 2
+const ROBOT_GLB_MESH_CORRECTION_Z = Math.PI
 
 const MAX_FPS = 30
 const FRAME_INTERVAL_MS = 1000 / MAX_FPS
@@ -374,6 +378,7 @@ const loadModel = async (): Promise<void> => {
   if (loaded && isBuiltInRobotModel(widget.value.options.modelUrl)) {
     const wrapper = new lib.Group()
     wrapper.rotation.x = ROBOT_GLB_MESH_CORRECTION_X
+    wrapper.rotation.z = ROBOT_GLB_MESH_CORRECTION_Z
     wrapper.add(mesh)
     modelRoot = wrapper
   } else {
@@ -421,6 +426,7 @@ onMounted(async () => {
     return
   }
 
+  renderer.setClearColor(0x000000, 0)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
   scene = new three.Scene()

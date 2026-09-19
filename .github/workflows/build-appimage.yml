@@ -32,9 +32,8 @@ jobs:
 
       - name: Set version as environment variable
         run: |
-          TAG=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || true)
-          if [ -n "$TAG" ]; then
-            VERSION="$TAG"
+          if VERSION=$(git describe --tags --long 2>/dev/null | sed 's/^v//'); then
+            :
           else
             VERSION="${{ github.event.inputs.version }}"
           fi
@@ -42,6 +41,8 @@ jobs:
           echo "COCKPIT_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Install and build
+        env:
+          ELECTRON: true
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
           yarn build
@@ -80,9 +81,8 @@ jobs:
 
       - name: Set version as environment variable
         run: |
-          TAG=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || true)
-          if [ -n "$TAG" ]; then
-            VERSION="$TAG"
+          if VERSION=$(git describe --tags --long 2>/dev/null | sed 's/^v//'); then
+            :
           else
             VERSION="${{ github.event.inputs.version }}"
           fi
@@ -90,6 +90,8 @@ jobs:
           echo "COCKPIT_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Install and build
+        env:
+          ELECTRON: true
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
           yarn build
